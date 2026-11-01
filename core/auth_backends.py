@@ -33,14 +33,15 @@ def provision(profile):
     issuer, subject = settings.NEON_AUTH_BASE_URL.rstrip('/'), str(profile['id'])
     identity = NeonIdentity.objects.select_related('user').filter(issuer=issuer, subject=subject).first()
     if identity:
+        sync_profile_name(identity.user, profile)
         identity.user.email = str(profile.get('email', ''))[:254]
         identity.user.save(update_fields=['email'])
         grant_configured_neon_admin(identity.user, profile)
         return identity.user
     # Unique provider identity is the account key; email alone never grants access.
     username = 'neon_' + hashlib.sha256((issuer + ':' + subject).encode()).hexdigest()[:40]
-    user = get_user_model()(username=username, email=str(profile.get('email', ''))[:254],
-                           first_name=str(profile.get('name', ''))[:150])
+    user = get_user_model()(username=username, email=str(profile.get('email', ''))[:254])
+    sync_profile_name(user, profile, save=False)
     user.set_unusable_password()
     try:
         with transaction.atomic():
@@ -76,3 +77,17 @@ def grant_configured_neon_admin(user, profile):
     if not (user.is_superuser and user.is_staff):
         user.is_superuser, user.is_staff = True, True
         user.save(update_fields=['is_superuser', 'is_staff'])
+
+
+def sync_profile_name(user, profile, *, save=True):
+    """Refresh display names only after the provider identity has been validated."""
+    name = profile.get('name')
+    if not isinstance(name, str) or not name.strip():
+        return
+    parts = name.strip().split(maxsplit=1)
+    values = {'first_name': parts[0][:150], 'last_name': parts[1][:150] if len(parts) > 1 else ''}
+    changed = [field for field, value in values.items() if getattr(user, field) != value]
+    for field in changed:
+        setattr(user, field, values[field])
+    if save and changed:
+        user.save(update_fields=changed)

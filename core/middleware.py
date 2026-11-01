@@ -38,6 +38,8 @@ class NeonSessionMiddleware:
                                                     subject=str(profile['id'])).exists()
                 if not valid:
                     raise neon_auth.NeonAuthError('Session identity changed.')
+                from core.auth_backends import sync_profile_name
+                sync_profile_name(request.user, profile)
             except neon_auth.NeonAuthError:
                 logout(request)
                 return redirect('login')

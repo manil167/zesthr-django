@@ -1,3 +1,4 @@
+{% load account_names %}
 {% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,8 +49,8 @@
       <button class="icon theme-toggle-btn" id="homeThemeToggle" aria-label="Toggle theme">◐</button>
       {% if user.is_authenticated %}
         <span class="home-user-pill">
-          <span class="user-avatar">{{ user.username|first|upper }}</span>
-          <span class="user-name">{{ user.username }}</span>
+          <span class="user-avatar">{{ user|first_name_label|first|upper }}</span>
+          <span class="user-name">{{ user|first_name_label }}</span>
         </span>
         <a href="{% url 'dashboard' %}" class="btn hros-primary-btn">Go to Dashboard →</a>
       {% else %}

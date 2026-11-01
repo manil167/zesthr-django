@@ -1,3 +1,4 @@
+{% load account_names %}
 {% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,9 +108,9 @@
       {% if user.employee_profile %}
         {{ user.employee_profile.name }} <span class="hros-badge">EMP</span>
       {% elif perms.core.view_all_attendance %}
-        {{ user.username }} <span class="hros-badge">STAFF</span>
+        {{ user|first_name_label }} <span class="hros-badge">STAFF</span>
       {% else %}
-        {{ user.username }}
+        {{ user|first_name_label }}
       {% endif %}
     </span>
     <a class="btn ghost sm" href="{% url 'password_change' %}">Change password</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost sm">Sign out</button></form>

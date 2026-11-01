@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load account_names %}
 {% block title %}{{ emp.name }}{% endblock %}
 {% block content %}
 <div class="head">
@@ -50,7 +51,7 @@
       <dt>Confirmation</dt><dd>{{ emp.confirmation_date|default:"—" }}</dd>
       {% if emp.separation_date %}<dt>Separation date</dt><dd>{{ emp.separation_date }}</dd>{% endif %}
       {% if emp.separation_reason %}<dt>Reason</dt><dd>{{ emp.separation_reason }}</dd>{% endif %}
-      <dt>Login account</dt><dd>{% if emp.user %}{{ emp.user.username }}{% if not emp.user.is_active %} <span class="tag A">disabled</span>{% endif %}{% else %}not linked{% endif %}</dd>
+      <dt>Login account</dt><dd>{% if emp.user %}{{ emp.user|first_name_label }}{% if not emp.user.is_active %} <span class="tag A">disabled</span>{% endif %}{% else %}not linked{% endif %}</dd>
     </dl>
   </section>
   {% endif %}
