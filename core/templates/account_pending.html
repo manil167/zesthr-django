@@ -1,0 +1,45 @@
+
+{% extends "auth_base.html" %}
+
+{% block title %}Account Pending | HROS{% endblock %}
+
+{% block art_extra %}
+<p class="login-subtext">
+    HROS helps organizations manage their workforce securely.
+</p>
+{% endblock %}
+
+{% block card %}
+<div class="login-card">
+    <h2>Account awaiting authorization</h2>
+
+    <p class="login-subtext">
+        Your account has been created, but it is not yet linked
+        to an authorized employee record.
+    </p>
+
+    <p>
+        Please contact your HR administrator. They must verify
+        your details and link your account to the correct employee
+        record before you can access employee services.
+    </p>
+
+    <p>
+        Until then, attendance records, payroll information,
+        employee records, and other restricted HR features
+        remain unavailable.
+    </p>
+
+    <p class="login-subtext">
+        If you already work for an organization using HROS,
+        contact its HR team for assistance.
+    </p>
+
+    <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn hros-btn-lg">
+            Sign Out
+        </button>
+    </form>
+</div>
+{% endblock %}

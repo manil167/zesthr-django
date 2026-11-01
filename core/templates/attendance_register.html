@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Daily register{% endblock %}
+{% block content %}
+<div class="head">
+  <div><h1>Daily register</h1><p class="muted"><time datetime="{{ day|date:'Y-m-d' }}">{{ day|date:"l, j F Y" }}</time>{% if holiday %} · Holiday: <b>{{ holiday.name }}</b>{% endif %}</p></div>
+  <div class="row-actions">
+    <a class="btn ghost sm" href="?date={{ prev_day|date:'Y-m-d' }}">‹ Previous day</a>
+    {% if day != today %}<a class="btn ghost sm" href="?">Today</a>{% endif %}
+    <a class="btn ghost sm" href="?date={{ next_day|date:'Y-m-d' }}">Next day ›</a>
+    <a class="btn ghost sm" href="{% url 'attendance_exceptions' %}">Exceptions</a>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><span>Present</span><b>{{ counts.P }}</b></div>
+  <div class="stat"><span>Half day</span><b>{{ counts.H }}</b></div>
+  <div class="stat warn"><span>Absent</span><b>{{ counts.A }}</b></div>
+  <div class="stat navy"><span>On leave</span><b>{{ counts.L }}</b></div>
+  <div class="stat {% if counts.unmarked %}warn{% endif %}"><span>Unmarked</span><b>{{ counts.unmarked }}</b></div>
+  <div class="stat"><span>Not working</span><b>{{ counts.off }}</b></div>
+</div>
+
+<form method="get" class="filters">
+  <label>Date <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" onchange="this.form.submit()"></label>
+  <label>Department <select name="department" onchange="this.form.submit()"><option value="">All</option>{% for d in departments %}<option value="{{ d.pk }}" {% if department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
+  <label>Show <select name="status" onchange="this.form.submit()">
+    <option value="">Everyone</option><option value="unmarked" {% if status == 'unmarked' %}selected{% endif %}>Unmarked only</option>
+    <option value="P" {% if status == 'P' %}selected{% endif %}>Present</option><option value="H" {% if status == 'H' %}selected{% endif %}>Half day</option>
+    <option value="A" {% if status == 'A' %}selected{% endif %}>Absent</option><option value="L" {% if status == 'L' %}selected{% endif %}>On leave</option>
+    <option value="off" {% if status == 'off' %}selected{% endif %}>Not working</option></select></label>
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name or ID" aria-label="Search employees">
+  <button class="btn ghost sm">Filter</button>
+</form>
+
+<form method="post" action="{% url 'attendance_bulk' %}" id="bulkForm">
+  {% csrf_token %}<input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+  <section class="card"><div class="scroll"><table>
+    <tr>{% if can_bulk %}<th><input type="checkbox" id="selectAll" aria-label="Select all"></th>{% endif %}<th>Employee</th><th>Department</th><th>Status</th><th>In</th><th>Out</th><th>Schedule</th><th></th></tr>
+    {% for r in rows %}<tr>
+      {% if can_bulk %}<td><input type="checkbox" name="emp" value="{{ r.emp.pk }}" class="pick {{ r.state }}" aria-label="Select {{ r.emp.name }}"></td>{% endif %}
+      <td><a href="{% url 'employee_detail' r.emp.pk %}">{{ r.emp.name }}</a> <small class="muted">{{ r.emp.employee_number }}</small></td>
+      <td>{{ r.emp.department|default:"-" }}</td>
+      <td>{% if r.rec %}<span class="tag {{ r.rec.status }}">{{ r.rec.get_status_display }}</span>{% elif r.state == 'off' %}<span class="muted">Not a working day</span>{% else %}<span class="tag A">Unmarked</span>{% endif %}</td>
+      <td>{{ r.rec.check_in|time:"H:i"|default:"-" }}</td>
+      <td>{{ r.rec.check_out|time:"H:i"|default:"-" }}{% if r.rec.ends_next_day %} <small>(+1 day)</small>{% endif %}</td>
+      <td>{% if r.day %}{% if r.day.late_minutes %}<span class="tag H">Late {{ r.day.late_text }}</span> {% endif %}{% if r.day.early_minutes %}<span class="tag H">Early {{ r.day.early_text }}</span> {% endif %}{% if r.day.overtime_minutes %}<span class="tag P">OT {{ r.day.overtime_text }}</span>{% endif %}{% else %}-{% endif %}</td>
+      <td class="row-actions">{% if r.rec %}{% if perms.core.change_attendance %}<a href="{% url 'attendance_edit' r.rec.pk %}">Edit</a>{% endif %}{% elif perms.core.add_attendance %}<a href="{% url 'attendance_add' %}?emp={{ r.emp.pk }}&date={{ day|date:'Y-m-d' }}">Add</a>{% endif %}{% if perms.core.view_attendance_audit %} <a href="{% url 'attendance_history' %}?emp={{ r.emp.pk }}&from={{ day|date:'Y-m-d' }}&to={{ day|date:'Y-m-d' }}">History</a>{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="8" class="empty">No employees match.</td></tr>{% endfor %}
+  </table></div></section>
+
+  {% if can_bulk and rows %}
+  <section class="card bulk-panel" aria-labelledby="bulk-title">
+    <h2 id="bulk-title">Mark the ticked employees</h2>
+    <div class="filters">
+      <button type="button" class="btn ghost sm" id="pickUnmarked">Tick all unmarked</button>
+      <label>Mark as <select name="status"><option value="P">Present</option><option value="A">Absent</option><option value="H">Half day</option><option value="L">Leave</option></select></label>
+      <label>Check-in <input type="time" name="check_in"></label>
+      <label>Check-out <input type="time" name="check_out"></label>
+      <label><input type="checkbox" name="ends_next_day"> Check-out next day</label>
+      {% if can_overwrite %}<label><input type="checkbox" name="overwrite"> Replace existing records</label>{% endif %}
+    </div>
+    <div class="filters">
+      <label style="flex:1">Reason (kept in the history) <input name="reason" maxlength="255" required placeholder="e.g. Office closed for a power cut"></label>
+      <button class="btn">Apply to ticked</button>
+    </div>
+    <p class="muted">Times apply to every ticked employee and are ignored for Absent and Leave. Employees who already have a record are skipped unless you choose to replace them.</p>
+  </section>
+  {% endif %}
+</form>
+<script>
+(function () {
+  var all = document.getElementById('selectAll'), boxes = document.querySelectorAll('input.pick');
+  if (all) all.addEventListener('change', function () { boxes.forEach(function (b) { b.checked = all.checked; }); });
+  var u = document.getElementById('pickUnmarked');
+  if (u) u.addEventListener('click', function () { boxes.forEach(function (b) { b.checked = b.classList.contains('unmarked'); }); });
+})();
+</script>
+{% endblock %}

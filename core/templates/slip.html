@@ -3,17 +3,20 @@
 {% block content %}
 <div class="head noprint"><h1>Salary slip</h1><div class="actions"><button class="btn" onclick="window.print()">Print / save as PDF</button><a class="btn ghost" href="{% url 'payroll' %}?month={{ s.month }}&year={{ s.year }}">Back to register</a></div></div>
 <article class="slip">
-  <header><div class="slip-header-brand"><svg class="hros-logo-icon" width="28" height="28" viewBox="0 0 40 40" fill="none" style="vertical-align:middle;margin-right:8px"><defs><linearGradient id="hrosGradSlip" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0d9488"/></linearGradient></defs><rect width="40" height="40" rx="8" fill="url(#hrosGradSlip)"/><path d="M12 11V29M28 11V29M12 20H28" stroke="white" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="20" r="3" fill="#ffffff"/></svg><h2>HROS Payroll</h2><p>Salary slip for {{ month_name }} {{ s.year }}</p></div><div class="amount"><span>Net pay</span><b>₹{{ s.net }}</b></div></header>
-  <dl class="meta"><div><dt>Employee</dt><dd>{{ s.emp.name }}</dd></div><div><dt>Designation</dt><dd>{{ s.emp.designation }}</dd></div><div><dt>Employee ID</dt><dd>{{ s.emp.id }}</dd></div><div><dt>Generated</dt><dd>{{ s.generated_on|date:"j M Y" }}</dd></div></dl>
+  <header><div class="slip-header-brand"><svg class="hros-logo-icon" width="28" height="28" viewBox="0 0 40 40" fill="none" style="vertical-align:middle;margin-right:8px"><defs><linearGradient id="hrosGradSlip" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0d9488"/></linearGradient></defs><rect width="40" height="40" rx="8" fill="url(#hrosGradSlip)"/><path d="M12 11V29M28 11V29M12 20H28" stroke="white" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="20" r="3" fill="#ffffff"/></svg><h2>HROS Payroll</h2><p>Salary slip for {{ month_name }} {{ s.year }}</p></div><div class="amount"><span>Net pay</span><b>{{ currency }} {{ s.net }}</b></div></header>
+  <dl class="meta"><div><dt>Employee</dt><dd>{{ s.calculation_snapshot.name|default:s.emp.name }}</dd></div><div><dt>Designation</dt><dd>{{ s.calculation_snapshot.designation|default:s.emp.designation }}</dd></div><div><dt>Employee ID</dt><dd>{{ s.emp.id }}</dd></div><div><dt>Generated</dt><dd>{{ s.generated_on|date:"j M Y" }}</dd></div></dl>
   <h3>Attendance</h3>
   <table><tr><th>Present</th><th>Half days</th><th>Leave</th><th>Absent</th></tr><tr><td>{{ c.present }}</td><td>{{ c.half }}</td><td>{{ c.leave }}</td><td>{{ c.absent }}</td></tr></table>
   <h3>Earnings and deductions</h3>
   <table>
-    <tr><td>Basic salary (gross)</td><td class="r">₹{{ s.gross }}</td></tr>
-    <tr><td>Per-day pay</td><td class="r">₹{{ s.per_day_pay }}</td></tr>
+    <tr><td>Basic salary</td><td class="r">{{ currency }} {{ basic }}</td></tr>
+    {% if s.overtime_pay %}<tr><td>Overtime ({{ overtime_text }})</td><td class="r">+ {{ currency }} {{ s.overtime_pay }}</td></tr>{% endif %}
+    {% for description, kind, amount in components %}<tr><td>{{ description }}</td><td class="r">{% if kind == "DEDUCTION" %}-{% else %}+{% endif %} {{ currency }} {{ amount }}</td></tr>{% endfor %}
+    <tr><td>Gross pay</td><td class="r">{{ currency }} {{ s.gross }}</td></tr>
+    <tr><td>Per-day pay</td><td class="r">{{ currency }} {{ s.per_day_pay }}</td></tr>
     <tr><td>Absent days</td><td class="r">{{ s.absent_days }}</td></tr>
-    <tr><td>Deduction ({{ s.absent_days }} x ₹{{ s.per_day_pay }})</td><td class="r">- ₹{{ s.deduction }}</td></tr>
-    <tr class="total"><td>Net salary</td><td class="r">₹{{ s.net }}</td></tr>
+    <tr><td>Total deductions</td><td class="r">- {{ currency }} {{ s.deduction }}</td></tr>
+    <tr class="total"><td>Net salary</td><td class="r">{{ currency }} {{ s.net }}</td></tr>
   </table>
   <footer>Computer-generated slip. No signature required.</footer>
 </article>

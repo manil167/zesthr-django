@@ -1,0 +1,12 @@
+{% extends "auth_base.html" %}
+{% block title %}Verify email{% endblock %}
+{% block card %}
+<form method="post" class="login-card">{% csrf_token %}
+<h2>Verify your email</h2>
+<p>Enter the verification code from Neon, or follow the verification link if your administrator configured email links. You must verify your email before signing in.</p>
+{% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}
+{{ form.as_p }}<button class="btn" name="action" value="verify">Verify code</button>
+<button class="btn ghost" name="action" value="resend">Send a code</button>
+<p><a href="{% url 'login' %}">Sign in</a></p>
+</form>
+{% endblock %}

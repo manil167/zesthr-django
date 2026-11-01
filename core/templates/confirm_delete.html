@@ -3,7 +3,7 @@
 {% block content %}
 <div class="head"><h1>{{ title }}</h1></div>
 <form method="post" class="card form">{% csrf_token %}
-  <p>Delete <b>{{ object }}</b>? Related attendance and salary records will be deleted too. This cannot be undone.</p>
+  <p>Delete <b>{{ object }}</b>? This cannot be undone. An employee who has attendance, leave or payroll history cannot be deleted: use <b>Deactivate</b> on their profile instead.</p>
   <div class="actions"><button class="btn danger-btn">Delete</button><a class="btn ghost" href="javascript:history.back()">Keep it</a></div>
 </form>
 {% endblock %}

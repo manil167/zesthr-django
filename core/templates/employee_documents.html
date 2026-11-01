@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Employee documents{% endblock %}
+{% block content %}
+<div class="head"><h1>{{ employee.name }}: documents</h1><a href="{% url 'employee_detail' employee.pk %}">Employee profile</a></div>
+{% if can_upload %}<section class="card"><h2>Upload employment document</h2><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button class="btn">Upload document</button></form></section>{% endif %}
+<section class="card"><div class="scroll"><table><thead><tr><th>Document</th><th>Type</th><th>Uploaded</th><th>Retain until</th><th>Actions</th></tr></thead><tbody>
+{% for document in documents %}<tr><td>{{ document.title }}</td><td>{{ document.get_document_type_display }}</td><td>{{ document.uploaded_at }}</td><td>{{ document.retain_until|default:"Retain indefinitely" }}</td><td><a href="{% url 'document_download' document.pk %}">Download PDF</a>
+{% if can_upload and document.retain_until %}<form method="post" action="{% url 'document_request_purge' document.pk %}">{% csrf_token %}<label>Deletion reason <input name="reason" required maxlength="255"></label><button class="btn ghost sm danger">Request deletion after retention</button></form>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="5">No documents are available to your account.</td></tr>{% endfor %}</tbody></table></div>
+<nav aria-label="Pagination">{% if documents.has_previous %}<a href="?page={{ documents.previous_page_number }}">Previous</a>{% endif %}
+Page {{ documents.number }} of {{ documents.paginator.num_pages }} {% if documents.has_next %}<a href="?page={{ documents.next_page_number }}">Next</a>{% endif %}</nav></section>
+{% endblock %}

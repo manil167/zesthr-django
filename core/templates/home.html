@@ -42,7 +42,6 @@
       <a href="#preview">Preview</a>
       <a href="#calculator">Payroll Engine</a>
       <a href="#workflow">Workflow</a>
-      <a href="#demo">Demo Access</a>
     </nav>
 
     <div class="home-nav-actions">
@@ -93,15 +92,15 @@
           <span>Get Started / Sign In</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <a href="#demo" class="btn ghost hros-cta-ghost">Demo Credentials (admin)</a>
+        <a href="{% url 'signup' %}" class="btn ghost hros-cta-ghost">Create an Account</a>
       {% endif %}
     </div>
 
     <div class="hero-trust-chips">
-      <span><svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Zero Cloud Dependencies</span>
-      <span><svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Precision Calendar Math</span>
+      <span><svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Attendance and leave in one place</span>
+      <span><svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Reviewed payroll calculations</span>
       <span><svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Print-to-PDF Salary Slips</span>
-      <span><svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Built on Django & SQLite</span>
+      <span><svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> Access tailored to your role</span>
     </div>
 
   </div>
@@ -120,10 +119,10 @@
         </div>
         <div class="browser-address-bar">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span>https://hros.workspace.internal/console/dashboard</span>
+          <span>{% if perms.core.view_all_attendance %}Your workspace overview{% else %}Product preview — illustrative data{% endif %}</span>
         </div>
         <div class="browser-status">
-          <span class="pulse-indicator"></span> Live Session
+          <span class="pulse-indicator"></span> {% if perms.core.view_all_attendance %}Your workspace{% else %}Sample workspace{% endif %}
         </div>
       </div>
 
@@ -133,22 +132,22 @@
         <div class="mockup-kpis">
           <div class="mock-kpi-card">
             <span class="mock-label">Active Employees</span>
-            <div class="mock-val">{{ total_employees|default:"5" }}</div>
+            <div class="mock-val">{{ total_employees|default_if_none:"5" }}</div>
             <span class="mock-sub">All departments</span>
           </div>
           <div class="mock-kpi-card ok">
             <span class="mock-label">Present Today</span>
-            <div class="mock-val">{{ present_count|default:"4" }}</div>
+            <div class="mock-val">{{ present_count|default_if_none:"4" }}</div>
             <span class="mock-sub">Verified check-ins</span>
           </div>
           <div class="mock-kpi-card bad">
             <span class="mock-label">Absent / Leave</span>
-            <div class="mock-val">{{ absent_count|default:"1" }}</div>
+            <div class="mock-val">{{ absent_count|default_if_none:"1" }}</div>
             <span class="mock-sub">Loss of pay tracked</span>
           </div>
           <div class="mock-kpi-card navy">
-            <span class="mock-label">{{ month_name }} Net Payroll</span>
-            <div class="mock-val">₹{{ payroll_total|floatformat:0|default:"2,45,000" }}</div>
+            <span class="mock-label">{% if not perms.core.view_payroll_report %}Sample {% endif %}{{ month_name }} Net Payroll</span>
+            <div class="mock-val">₹{{ payroll_total|floatformat:0|default_if_none:"2,45,000" }}</div>
             <span class="mock-sub">Auto-computed</span>
           </div>
         </div>
@@ -181,6 +180,8 @@
                         <td><span class="tag {{ rec.status }}">{{ rec.get_status_display }}</span></td>
                       </tr>
                     {% endfor %}
+                  {% elif perms.core.view_all_attendance %}
+                    <tr><td colspan="4">No attendance records today.</td></tr>
                   {% else %}
                     <tr>
                       <td><b>Asha Verma</b></td>
@@ -215,7 +216,7 @@
           <!-- Right: Real-time Salary Proration Simulation Card -->
           <div class="mock-panel">
             <div class="mock-panel-head">
-              <h3>Deduction Engine Architecture</h3>
+              <h3>How deductions are calculated</h3>
               <span class="mock-badge-tech">Formula-Driven</span>
             </div>
             
@@ -265,7 +266,7 @@
   <div class="home-container">
     <div class="ribbon-grid">
       <div class="ribbon-item">
-        <div class="ribbon-num">{{ total_employees|default:"5+" }}</div>
+        <div class="ribbon-num">{{ total_employees|default_if_none:"5+" }}</div>
         <div class="ribbon-label">Employees Managed</div>
       </div>
       <div class="ribbon-item">
@@ -340,7 +341,7 @@
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         </div>
         <h3>Audit-Grade Monthly Reports</h3>
-        <p>Aggregated SQL GROUP-BY reporting that compiles Present, Half-Day, Leave, and Absent tallies across the whole team. Perfect for monthly accounting audits and management reviews.</p>
+        <p>Review monthly attendance totals, leave records, and payroll summaries with access tailored to your role. Export reports for accounting and management reviews.</p>
         <div class="feature-tags">
           <span>• Monthly Summaries</span>
           <span>• Print-Ready Layout</span>
@@ -442,75 +443,7 @@
   </div>
 </section>
 
-<!-- Demo Credentials Sandbox -->
-<section class="home-demo-section" id="demo">
-  <div class="home-container">
-    <div class="demo-card">
-      <div class="demo-left">
-        <div class="section-badge">Instant Sandbox</div>
-        <h2>Test HROS with Live Sample Data</h2>
-        <p>The system is pre-configured with a complete administrative account and sample staff profiles ready for immediate demonstration.</p>
-        
-        <div class="credentials-box" style="flex-direction: column; gap: 1rem;">
-          <div style="display: flex; gap: 2rem;">
-            <div class="cred-item">
-              <span class="cred-label">HR Admin:</span>
-              <code class="cred-value">admin</code>
-            </div>
-            <div class="cred-item">
-              <span class="cred-label">Password:</span>
-              <code class="cred-value">admin123</code>
-            </div>
-          </div>
-          <div style="display: flex; gap: 2rem; border-top: 1px dashed var(--line); padding-top: .75rem;">
-            <div class="cred-item">
-              <span class="cred-label">Employee Login:</span>
-              <code class="cred-value" style="font-size: 1.05rem;">aarav.sharma</code>
-            </div>
-            <div class="cred-item">
-              <span class="cred-label">Password:</span>
-              <code class="cred-value" style="font-size: 1.05rem;">emp123</code>
-            </div>
-          </div>
-        </div>
-
-        <div class="demo-actions">
-          {% if user.is_authenticated %}
-            <a href="{% url 'dashboard' %}" class="btn hros-primary-btn">You're Signed In — Launch Dashboard →</a>
-          {% else %}
-            <a href="{% url 'login' %}" class="btn hros-primary-btn">Sign In with Demo Credentials →</a>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="demo-right">
-        <div class="demo-features-list">
-          <div class="df-item">
-            <div class="df-check">✓</div>
-            <div>
-              <b>10 Pre-loaded Employee Accounts</b>
-              <p>Individual logins for daily check-in/out and self-service portal.</p>
-            </div>
-          </div>
-          <div class="df-item">
-            <div class="df-check">✓</div>
-            <div>
-              <b>Indian Government Holidays 🇮🇳</b>
-              <p>Official 2026 Gazetted & Restricted Public Holiday schedule built in.</p>
-            </div>
-          </div>
-          <div class="df-item">
-            <div class="df-check">✓</div>
-            <div>
-              <b>1 Sick Leave / Mo & Leave Application</b>
-              <p>Strict 1-day/month quota enforcement with automated HR approval flow.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- Public demo credentials have been removed. -->
 
 <!-- Footer -->
 <footer class="home-footer">
@@ -546,22 +479,11 @@
         <a href="{% if user.is_authenticated %}{% url 'payroll' %}{% else %}{% url 'login' %}{% endif %}">Salary Register</a>
       </div>
 
-      <div class="footer-links-group">
-        <h4>Architecture</h4>
-        <span>Python &amp; Django</span>
-        <span>SQLite &amp; SQL Schema</span>
-        <span>Vanilla CSS &amp; HTML5</span>
-        <span>Native Browser PDF Print</span>
-      </div>
-    </div>
+</div>
 
     <div class="footer-bottom">
       <p>© 2026 HROS (Human Resources Operating System). All rights reserved.</p>
-      <div class="footer-tech-pill">
-        <span>● Django 5.x</span>
-        <span>● Standalone SQL Compliant</span>
-      </div>
-    </div>
+</div>
   </div>
 </footer>
 
@@ -607,5 +529,6 @@
   updateCalc();
 </script>
 
+{% if user.is_authenticated %}{% include "assistant_widget.html" %}{% endif %}
 </body>
 </html>

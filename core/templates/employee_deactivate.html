@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Deactivate {{ emp.name }}{% endblock %}
+{% block content %}
+<div class="head"><h1>Deactivate {{ emp.name }}</h1></div>
+<section class="card">
+  <p><b>What happens:</b></p>
+  <ul>
+    <li>{{ emp.name }} is no longer counted as active and is left out of new attendance registers and payroll runs.</li>
+    <li>{% if emp.user %}Their login <b>{{ emp.user.username }}</b> is disabled immediately, including any open session.{% else %}They have no linked login.{% endif %}</li>
+    <li>All attendance, leave and payroll history is kept. You can reactivate them later.</li>
+  </ul>
+</section>
+<form method="post" class="card form">{% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="toast error" role="alert">{{ e }}</div>{% endfor %}
+  {% for f in form %}<label>{{ f.label }} {{ f }}{% if f.help_text %}<small>{{ f.help_text }}</small>{% endif %}{% for e in f.errors %}<small class="err">{{ e }}</small>{% endfor %}</label>{% endfor %}
+  <div class="actions"><button class="btn danger">Deactivate {{ emp.name }}</button><a class="btn ghost" href="{% url 'employee_detail' emp.pk %}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "auth_base.html" %}
+
+{% load socialaccount static %}
+
+{% block title %}Create Account{% endblock %}
+
+{% block art_extra %}
+<p class="login-subtext">
+    Join HROS securely. Access to company HR records requires
+    authorization from your HR team.
+</p>
+{% endblock %}
+
+{% block card %}
+
+<form method="post" class="login-card" novalidate {% if neon_auth_enabled %}data-neon-signup{% endif %}>
+    {% csrf_token %}{{ form.invitation }}{% for error in form.invitation.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+
+    <div class="auth-header">
+        <h2>Create your HROS account</h2>
+
+        <p class="login-subtext">
+            Create your account to get started with HROS.
+        </p>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="toast error" role="alert">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="form-grid">
+
+        <div class="form-group">
+            <label for="{{ form.first_name.id_for_label }}">
+                First name
+            </label>
+
+            {{ form.first_name }}
+
+            {% for error in form.first_name.errors %}
+                <div class="field-error">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.last_name.id_for_label }}">
+                Last name
+            </label>
+
+            {{ form.last_name }}
+
+            {% for error in form.last_name.errors %}
+                <div class="field-error">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+{% if form.username %}
+    <div class="form-group">
+        <label for="{{ form.username.id_for_label }}">
+            Username
+        </label>
+
+        {{ form.username }}
+
+        {% for error in form.username.errors %}
+            <div class="field-error">
+                {{ error }}
+            </div>
+        {% endfor %}
+    </div>
+
+{% endif %}
+    <div class="form-group">
+        <label for="{{ form.email.id_for_label }}">
+            Email address
+        </label>
+
+        {{ form.email }}
+
+        {% for error in form.email.errors %}
+            <div class="field-error">
+                {{ error }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.password1.id_for_label }}">
+            Password
+        </label>
+
+        {{ form.password1 }}
+
+        {% for error in form.password1.errors %}
+            <div class="field-error">
+                {{ error }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.password2.id_for_label }}">
+            Confirm password
+        </label>
+
+        {{ form.password2 }}
+
+        {% for error in form.password2.errors %}
+            <div class="field-error">
+                {{ error }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <button
+        type="submit"
+        class="btn hros-btn-lg hros-primary-btn"
+    >
+        Create Account
+    </button>
+
+    {% if google_login_enabled %}
+        <div class="auth-divider">
+            <span>or continue with</span>
+        </div>
+
+        <a
+            href="{% provider_login_url 'google' process='signup' %}"
+            class="btn ghost hros-btn-lg google-auth-btn"
+        >
+            Continue with Google
+        </a>
+    {% endif %}
+
+    <p class="login-subtext auth-footer">
+        Already have an account?
+        <a href="{% url 'login' %}">
+            Sign in
+        </a>
+    </p>
+
+</form>
+{% if neon_auth_enabled %}<script type="module" src="{% static 'core/neon-signup.bundle.js' %}"></script>{% endif %}
+
+{% endblock %}

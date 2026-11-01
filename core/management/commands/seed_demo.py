@@ -1,16 +1,24 @@
 import random
 from datetime import date, time, timedelta
 
-from django.contrib.auth.models import User
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.contrib.auth.models import Group, User
+from django.core.management.base import BaseCommand, CommandError
 
-from core.models import Attendance, Employee, Holiday, LeaveApplication
+from core import roles
+from core.models import (Attendance, Department, Employee, EmploymentType, Holiday, JobPosition,
+                         LeaveApplication, WorkLocation, WorkSchedule)
+from core.roles import sync_roles
 
 
 class Command(BaseCommand):
     help = "Seed admin user, 10 dummy employees with logins (emp123), Indian Govt holidays, leaves, and attendance."
 
     def handle(self, *args, **opts):
+        if not settings.DEBUG:
+            raise CommandError("seed_demo creates accounts with well-known passwords; it only runs when DEBUG is True.")
+        sync_roles()
+
         # 1. Admin Superuser
         admin_user, _ = User.objects.get_or_create(
             username="admin",
@@ -18,7 +26,17 @@ class Command(BaseCommand):
         )
         admin_user.set_password("admin123")
         admin_user.save()
+        admin_user.groups.add(Group.objects.get(name=roles.HR_ADMIN))
         self.stdout.write(self.style.SUCCESS("[OK] Admin user created / updated: admin / admin123"))
+
+        # Demo accounts for the other staff roles (no employee profile).
+        for uname, role in (("hr.officer", roles.HR_OFFICER), ("payroll.officer", roles.PAYROLL_OFFICER)):
+            su, _ = User.objects.get_or_create(username=uname, defaults={"email": f"{uname}@hros.local"})
+            su.set_password("staff123")
+            su.is_staff = su.is_superuser = False
+            su.save()
+            su.groups.set([Group.objects.get(name=role)])
+            self.stdout.write(self.style.SUCCESS(f"[OK] {role} demo account: {uname} / staff123"))
 
         # 2. 10 Dummy Employees with User Logins
         employees_data = [
@@ -46,6 +64,7 @@ class Command(BaseCommand):
             u.is_staff = False
             u.is_superuser = False
             u.save()
+            u.groups.set([Group.objects.get(name=roles.EMPLOYEE)])
 
             # Create or update Employee profile linked to user
             emp, _ = Employee.objects.get_or_create(
@@ -171,6 +190,26 @@ class Command(BaseCommand):
         )
 
         self.stdout.write(self.style.SUCCESS("[OK] Sample leave requests (Pending & Approved) seeded."))
+
+        # Organization data: departments, a location and a standard schedule; employees
+        # are spread across the departments and the first employee manages the rest.
+        depts = [Department.objects.get_or_create(code=c, defaults={"name": n})[0]
+                 for c, n in (("ENG", "Engineering"), ("OPS", "Operations"), ("FIN", "Finance"))]
+        office, _ = WorkLocation.objects.get_or_create(name="Head Office", defaults={"city": "Mumbai", "country": "India"})
+        sched, _ = WorkSchedule.objects.get_or_create(
+            name="Standard day", defaults={"start_time": time(9, 0), "end_time": time(18, 0), "break_minutes": 60,
+                                           "grace_minutes": 10, "overtime_eligible": True, "is_default": True})
+        full_time, created = EmploymentType.objects.get_or_create(name="Full-time")
+        people = list(Employee.objects.filter(user__username__regex=r"^[a-z]+\.[a-z]+$")
+                      .exclude(user__username__in=["hr.officer", "payroll.officer"]).order_by("pk"))
+        lead = people[0] if people else None
+        for i, e in enumerate(people):
+            e.department = depts[i % len(depts)]
+            e.position = JobPosition.objects.get_or_create(title=e.designation, defaults={"department": e.department})[0]
+            e.employment_type, e.work_location, e.work_schedule = full_time, office, sched
+            e.manager = lead if e != lead else None
+            e.save()
+        self.stdout.write(self.style.SUCCESS("[OK] Departments, location, schedule and reporting lines seeded."))
         self.stdout.write(self.style.SUCCESS("\n" + "="*50))
         self.stdout.write(self.style.SUCCESS("Demo setup complete!"))
         self.stdout.write(self.style.SUCCESS("HR Admin:   admin / admin123"))

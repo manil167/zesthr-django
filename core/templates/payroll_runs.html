@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Payroll runs{% endblock %}
+{% block content %}
+<div class="head"><h1>Payroll runs</h1><a class="btn ghost" href="{% url 'payroll' %}">Salary register</a></div>
+{% if perms.core.generate_payroll %}<section class="card"><h2>Create or open a payroll period</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn">Open draft</button></form></section>{% endif %}
+<section class="card"><div class="scroll"><table><thead><tr><th>Organization</th><th>Period</th><th>Status</th><th></th></tr></thead><tbody>
+{% for run in runs %}<tr><td>{{ run.organization }}</td><td>{{ run.month }}/{{ run.year }}</td><td>{{ run.get_status_display }}</td><td><a href="{% url 'payroll_run_detail' run.pk %}">Review</a></td></tr>
+{% empty %}<tr><td colspan="4">No payroll runs have been created.</td></tr>{% endfor %}</tbody></table></div>
+<nav aria-label="Pagination">{% if runs.has_previous %}<a href="?page={{ runs.previous_page_number }}">Previous</a>{% endif %}
+Page {{ runs.number }} of {{ runs.paginator.num_pages }} {% if runs.has_next %}<a href="?page={{ runs.next_page_number }}">Next</a>{% endif %}</nav></section>
+{% endblock %}

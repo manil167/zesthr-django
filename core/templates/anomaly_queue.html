@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Attendance exception reviews{% endblock %}
+{% block content %}
+<div class="head"><h1>Attendance exception reviews</h1>{% if can_scan %}<form method="post">{% csrf_token %}<button class="btn">Check the last 30 days</button></form>{% endif %}</div>
+<p>These are reviewable signals. Duplicate clicks, missing punches, and schedule differences can have ordinary explanations; a signal is not a finding of misconduct.</p>
+<form method="get" class="filters"><label>Status <select name="status">{% for value, label in statuses %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button class="btn ghost">Filter</button></form>
+<section class="card"><div class="scroll"><table><thead><tr><th>Date</th><th>Employee</th><th>Signal</th><th>Status</th><th></th></tr></thead><tbody>
+{% for item in items %}<tr><td>{{ item.date }}</td><td>{{ item.employee }}</td><td>{{ item.get_kind_display }}</td><td>{{ item.get_status_display }}</td><td>{% if item.status == "OPEN" %}<a href="{% url 'anomaly_review' item.pk %}">Review</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="5">No exceptions match this filter.</td></tr>{% endfor %}</tbody></table></div>
+<nav aria-label="Pagination">{% if items.has_previous %}<a href="?status={{ status }}&page={{ items.previous_page_number }}">Previous</a>{% endif %} Page {{ items.number }} of {{ items.paginator.num_pages }} {% if items.has_next %}<a href="?status={{ status }}&page={{ items.next_page_number }}">Next</a>{% endif %}</nav></section>
+{% endblock %}

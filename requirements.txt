@@ -1,1 +1,14 @@
-Django>=4.2,<6.0
+# Everything the app needs to RUN. Vercel installs exactly this file, and so does `pip install -r requirements.txt`
+# for local work. (gunicorn is only for Docker/VM hosting: see requirements/production.txt.)
+Django>=5.2,<6.0
+python-dotenv>=1.0
+psycopg[binary]>=3.2
+whitenoise>=6.6
+django-allauth>=65.3,<66.0
+requests>=2.32,<3.0
+gunicorn>=22.0
+django_filter>=26.2
+djangorestframework>=3.18.3
+pypdf>=6.21.2,<7
+
+django-storages[s3]>=1.14.6,<2

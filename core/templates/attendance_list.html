@@ -1,17 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Attendance log{% endblock %}
 {% block content %}
-<div class="head"><h1>Attendance log</h1><a class="btn" href="{% url 'attendance_add' %}">Add manual entry</a></div>
+<div class="head"><h1>Attendance log</h1><div class="row-actions">
+  {% if perms.core.view_all_attendance %}<a class="btn ghost" href="{% url 'attendance_register' %}">Daily register</a>{% endif %}
+  {% if perms.core.add_attendance %}<a class="btn" href="{% url 'attendance_add' %}">Add manual entry</a>{% endif %}
+  {% if user.employee_profile.is_active %}<a class="btn" href="{% url 'correction_new' %}">Request a correction</a>{% endif %}
+</div></div>
 <form method="get" class="filters">
   <label>Month <select name="month" onchange="this.form.submit()">{% for m, name in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
   <label>Year <select name="year" onchange="this.form.submit()">{% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
+  <label>From <input type="date" name="from" value="{{ date_from }}"></label>
+  <label>To <input type="date" name="to" value="{{ date_to }}"></label>
+  {% if is_staff %}
+  <label>Department <select name="department" onchange="this.form.submit()"><option value="">All</option>{% for d in departments %}<option value="{{ d.pk }}" {% if department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
   <label>Employee <select name="emp" onchange="this.form.submit()"><option value="">Everyone</option>{% for e in employees %}<option value="{{ e.id }}" {% if emp == e.id|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>{% endfor %}</select></label>
+  {% endif %}
+  <label>Status <select name="status" onchange="this.form.submit()"><option value="">Any</option>{% for code, label in statuses %}<option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <button class="btn ghost sm">Apply</button>{% if date_from or department or emp or status %}<a class="btn ghost sm" href="{% url 'attendance_list' %}">Clear</a>{% endif %}
 </form>
+{% if date_from %}<p class="muted">Showing {{ date_from }} to {{ date_to }} (this replaces the month/year selection).</p>{% endif %}
 <section class="card"><div class="scroll"><table>
-  <tr><th>Date</th><th>Employee</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th><th></th></tr>
+  <tr><th>Date</th><th>Employee</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th><th>Schedule</th><th></th></tr>
   {% for a in records %}<tr><td>{{ a.date|date:"D, j M" }}</td><td>{{ a.emp.name }}</td><td><span class="tag {{ a.status }}">{{ a.get_status_display }}</span></td>
-    <td>{{ a.check_in|time:"H:i"|default:"-" }}</td><td>{{ a.check_out|time:"H:i"|default:"-" }}</td><td>{{ a.hours|default:"-" }}</td>
-    <td class="row-actions"><a href="{% url 'attendance_edit' a.pk %}">Edit</a><a class="danger" href="{% url 'attendance_delete' a.pk %}">Delete</a></td></tr>
-  {% empty %}<tr><td colspan="7" class="empty">No attendance recorded for this selection.</td></tr>{% endfor %}
-</table></div></section>
+    <td>{{ a.check_in|time:"H:i"|default:"-" }}</td><td>{{ a.check_out|time:"H:i"|default:"-" }}</td><td>{{ a.hours|default:"-" }}{% if a.ends_next_day %} <small title="Overnight shift: ends the next day">(+1 day)</small>{% endif %}</td>
+    <td>{% if a.day %}{% if a.day.late_minutes %}<span class="tag H" title="Arrived after the grace period">Late {{ a.day.late_text }}</span> {% endif %}{% if a.day.early_minutes %}<span class="tag H" title="Left before the end of the shift">Early {{ a.day.early_text }}</span> {% endif %}{% if a.day.overtime_minutes %}<span class="tag P" title="Paid overtime">OT {{ a.day.overtime_text }}</span>{% endif %}{% if not a.day.late_minutes and not a.day.early_minutes and not a.day.overtime_minutes and a.check_out %}<span class="muted">On time</span>{% endif %}{% else %}-{% endif %}</td>
+    <td class="row-actions">{% if perms.core.change_attendance %}<a href="{% url 'attendance_edit' a.pk %}">Edit</a>{% endif %}{% if perms.core.delete_attendance %}<a class="danger" href="{% url 'attendance_delete' a.pk %}">Delete</a>{% endif %}{% if not is_staff and user.employee_profile.is_active %}<a href="{% url 'correction_new' %}?date={{ a.date|date:'Y-m-d' }}">Request correction</a>{% endif %}{% if perms.core.view_attendance_audit %}<a href="{% url 'attendance_history' %}?emp={{ a.emp_id }}&from={{ a.date|date:'Y-m-d' }}&to={{ a.date|date:'Y-m-d' }}">History</a>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="8" class="empty">No attendance recorded for this selection.</td></tr>{% endfor %}
+</table></div>
+{% if is_paginated %}<nav class="pager" aria-label="Pages">
+  <span>{{ total_matches }} record{{ total_matches|pluralize }} · page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+  {% if page_obj.has_previous %}<a href="?{% querystring page=1 %}">« First</a><a href="?{% querystring page=page_obj.previous_page_number %}">‹ Previous</a>{% endif %}
+  {% if page_obj.has_next %}<a href="?{% querystring page=page_obj.next_page_number %}">Next ›</a><a href="?{% querystring page=paginator.num_pages %}">Last »</a>{% endif %}
+</nav>{% else %}<p class="pager"><span>{{ total_matches }} record{{ total_matches|pluralize }}</span></p>{% endif %}
+</section>
 {% endblock %}

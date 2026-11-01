@@ -5,232 +5,196 @@
 <div class="head">
   <div>
     <h1>Welcome, {{ emp.name }}</h1>
-    <p style="margin: .25rem 0 0; color: var(--mut); font-size: .95rem;">
-      {{ emp.designation }} &bull; {{ emp.department|default:"Operations" }} &bull; Emp Code: <b>#{{ emp.id }}</b>
-    </p>
+    <p class="muted">{{ emp.position|default:emp.designation }} &bull; {{ emp.department|default:"No department yet" }}{% if emp.employee_number %} &bull; ID <b>{{ emp.employee_number }}</b>{% endif %}</p>
   </div>
   <div class="actions">
-    <a class="btn" href="{% url 'leave_apply' %}">+ Apply Leave</a>
-    <a class="btn ghost" href="{% url 'holidays' %}">🇮🇳 Indian Holidays</a>
+    {% if emp.is_active %}<a class="btn" href="{% url 'leave_apply' %}">+ Apply Leave</a>{% endif %}
+    <a class="btn ghost" href="{% url 'holidays' %}">Holidays</a>
     <a class="btn ghost" href="{% url 'attendance_list' %}">My Attendance Log</a>
+    <a class="btn ghost" href="{% url 'my_profile' %}">My Profile</a>
   </div>
 </div>
 
+{% if notifications %}
+<section class="notices" aria-label="Notifications">
+  {% for n in notifications %}
+  <div class="notice {{ n.level }}" role="{% if n.level == 'warn' %}alert{% else %}status{% endif %}">
+    <span>{{ n.text }}</span>{% if n.href %}<a href="{{ n.href }}">View &rarr;</a>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 <div class="portal-grid">
   <!-- PUNCH CARD -->
-  <section class="punch-hero-card">
+  <section class="punch-hero-card" aria-labelledby="punch-title">
     <div class="punch-top">
       <div>
-        <h2 style="margin: 0; font-size: 1.15rem;">Daily Attendance Punch</h2>
-        <small style="color: var(--mut);">Check-in & Check-out for today</small>
+        <h2 id="punch-title" style="margin: 0; font-size: 1.15rem;">Daily Attendance Punch</h2>
+        <small style="color: var(--mut);">Check-in &amp; Check-out for today{% if today_holiday %} &bull; Holiday: {{ today_holiday.name }}{% endif %}</small>
       </div>
       <div>
-        {% if today_rec %}
-          {% if today_rec.status == "P" %}
-            <span class="punch-status-badge present">&#10003; Present Today</span>
-          {% elif today_rec.status == "L" %}
-            <span class="punch-status-badge leave">&#128392; On Approved Leave</span>
-          {% elif today_rec.status == "H" %}
-            <span class="punch-status-badge" style="background:#fdf0d6;color:#9a6a12;">Half-day</span>
-          {% else %}
-            <span class="punch-status-badge unmarked">&#9679; {{ today_rec.get_status_display }}</span>
-          {% endif %}
-        {% else %}
-          <span class="punch-status-badge unmarked">&#9679; Not Checked-in Yet</span>
-        {% endif %}
+        {% if punch_state == "inactive" %}<span class="punch-status-badge unmarked">&#9679; Record inactive</span>
+        {% elif today_rec.status == "L" %}<span class="punch-status-badge leave">&#128392; On Approved Leave</span>
+        {% elif today_rec.status == "A" %}<span class="punch-status-badge unmarked">&#9679; Marked Absent</span>
+        {% elif today_rec.status == "H" %}<span class="punch-status-badge" style="background:#fdf0d6;color:#9a6a12;">Half-day</span>
+        {% elif punch_state == "done" %}<span class="punch-status-badge present">&#10003; Day complete</span>
+        {% elif punch_state == "in" %}<span class="punch-status-badge present">&#10003; Working</span>
+        {% else %}<span class="punch-status-badge unmarked">&#9679; Not checked in yet</span>{% endif %}
       </div>
     </div>
 
     <div class="punch-timer">
-      <div class="punch-clock-big" id="punchLiveClock">--:--:--</div>
-      <div class="punch-date-sub">{{ today|date:"l, F j, Y" }}</div>
+      <div class="punch-clock-big" id="punchLiveClock" aria-hidden="true">--:--:--</div>
+      <div class="punch-date-sub"><time datetime="{{ today|date:'Y-m-d' }}">{{ today|date:"l, F j, Y" }}</time></div>
     </div>
 
-    <form method="post" action="{% url 'attendance_today' %}" class="punch-actions">
+    <form method="post" action="{% url 'attendance_today' %}" class="punch-actions" id="punchForm">
       {% csrf_token %}
       <input type="hidden" name="emp_id" value="{{ emp.id }}">
       <button type="submit" name="action" value="check_in" class="btn-punch in"
-              {% if today_rec and today_rec.check_in %}disabled title="Already checked in today"{% endif %}>
+              {% if punch_state != "not_in" %}disabled{% endif %}
+              {% if punch_state == "in" or punch_state == "done" %}title="Already punched in today"{% endif %}>
         <span>&#9654; Punch IN</span>
-        <small>{% if today_rec and today_rec.check_in %}Recorded: {{ today_rec.check_in|time:"H:i" }}{% else %}Start working day{% endif %}</small>
+        <small>{% if today_rec.check_in %}Recorded: {{ today_rec.check_in|time:"H:i" }}{% elif punch_state == "not_in" %}Start working day{% else %}Not available{% endif %}</small>
       </button>
-
       <button type="submit" name="action" value="check_out" class="btn-punch out"
-              {% if not today_rec or not today_rec.check_in %}disabled title="Punch IN first before checking out"{% endif %}>
+              {% if punch_state != "in" %}disabled{% endif %}
+              {% if punch_state == "not_in" %}title="Punch IN first"{% endif %}>
         <span>&#9632; Punch OUT</span>
-        <small>{% if today_rec and today_rec.check_out %}Updated: {{ today_rec.check_out|time:"H:i" }}{% else %}End of shift{% endif %}</small>
+        <small>{% if today_rec.check_out %}Recorded: {{ today_rec.check_out|time:"H:i" }}{% elif punch_state == "in" %}End of shift{% else %}Not available{% endif %}</small>
       </button>
     </form>
+    {% if punch_state == "marked" %}<p class="muted" style="margin-top:.8rem">HR has marked today as {{ today_rec.get_status_display|lower }}, so punching is not needed.</p>{% endif %}
 
     <div class="punch-log-row">
-      <div class="punch-log-col">
-        <span>Check-In</span>
-        <b>{{ today_rec.check_in|time:"h:i A"|default:"--:--" }}</b>
-      </div>
-      <div class="punch-log-col">
-        <span>Check-Out</span>
-        <b>{{ today_rec.check_out|time:"h:i A"|default:"--:--" }}</b>
-      </div>
-      <div class="punch-log-col">
-        <span>Working Hours</span>
-        <b>
-          {% if today_rec and today_rec.check_in and today_rec.check_out %}
-            Recorded
-          {% elif today_rec and today_rec.check_in %}
-            In Progress
-          {% else %}
-            --
-          {% endif %}
-        </b>
-      </div>
+      <div class="punch-log-col"><span>Check-In</span><b>{{ today_rec.check_in|time:"h:i A"|default:"--:--" }}</b></div>
+      <div class="punch-log-col"><span>Check-Out</span><b>{{ today_rec.check_out|time:"h:i A"|default:"--:--" }}</b></div>
+      <div class="punch-log-col"><span>Working Hours</span>
+        <b>{% if today_rec.hours %}{{ today_rec.hours }} h{% elif punch_state == "in" %}In progress{% else %}--{% endif %}</b></div>
     </div>
   </section>
 
-  <!-- SICK LEAVE QUOTA & HOLIDAY WIDGET -->
-  <div style="display: flex; flex-direction: column; gap: 1.2rem;">
-    <!-- SICK LEAVE BALANCE (1 / Month rule) -->
-    <div class="quota-card">
+  <div class="stack">
+    <!-- LEAVE BALANCE -->
+    <section class="quota-card" aria-labelledby="leave-title">
       <div class="quota-header">
         <div>
-          <h2 style="margin: 0; font-size: 1.1rem;">Sick Leave Balance</h2>
-          <small style="color: var(--mut);">Rule: 1 Sick Leave per calendar month</small>
+          <h2 id="leave-title" style="margin: 0; font-size: 1.1rem;">Leave balance</h2>
+          <small style="color: var(--mut);">Sick leave: 1 day per calendar month</small>
         </div>
-        <span class="tag {% if sick_rem > 0 %}P{% else %}A{% endif %}">
-          {% if sick_rem > 0 %}Available{% else %}Exhausted{% endif %}
-        </span>
+        <span class="tag {% if sick_rem > 0 %}P{% else %}A{% endif %}">{% if sick_rem > 0 %}Sick leave available{% else %}Sick leave used{% endif %}</span>
       </div>
+      <div class="quota-meter"><span class="quota-num">{{ sick_rem }}</span><span class="quota-label">sick day(s) left in {{ today|date:"F" }} (used {{ sick_used }})</span></div>
+      <dl class="dl" style="margin:.8rem 0">
+        <dt>Pending requests</dt><dd><b>{{ pending_leaves }}</b></dd>
+        {% for label, days in leave_taken %}<dt>{{ label }} taken in {{ today.year }}</dt><dd><b>{{ days }}</b> day{{ days|pluralize }}</dd>
+        {% empty %}<dt>Taken in {{ today.year }}</dt><dd>No approved leave yet</dd>{% endfor %}
+      </dl>
+      {% if emp.is_active %}<a href="{% url 'leave_apply' %}" class="btn" style="text-align: center; display: block;">Apply for Leave &rarr;</a>{% endif %}
+    </section>
 
-      <div class="quota-meter">
-        <span class="quota-num">{{ sick_rem }}</span>
-        <span class="quota-label">day(s) remaining for {{ today|date:"F" }}</span>
+    <!-- UPCOMING HOLIDAYS -->
+    <section class="card" style="margin: 0;" aria-labelledby="hol-title">
+      <div class="card-head"><h3 id="hol-title" class="eyebrow">Upcoming holidays</h3><a href="{% url 'holidays' %}">View all &rarr;</a></div>
+      {% for item in holidays %}
+      <div class="row-between">
+        <div><b>{{ item.holiday.name }}</b><div class="muted">{{ item.holiday.date|date:"D, j F Y" }}</div></div>
+        <span class="tag">{% if item.days_away == 0 %}Today{% elif item.days_away == 1 %}Tomorrow{% else %}in {{ item.days_away }} days{% endif %}</span>
       </div>
-
-      <div class="quota-bar">
-        <div class="quota-bar-fill {% if sick_rem == 0 %}empty{% endif %}"
-             style="width: {% if sick_rem > 0 %}100%{% else %}0%{% endif %};"></div>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; font-size: .88rem; color: var(--mut); margin-bottom: .8rem;">
-        <span>Monthly Quota: <b>1 Day</b></span>
-        <span>Used This Month: <b>{{ sick_used }} Day(s)</b></span>
-      </div>
-
-      <a href="{% url 'leave_apply' %}" class="btn" style="text-align: center; display: block;">
-        Apply for Leave &rarr;
-      </a>
-    </div>
-
-    <!-- UPCOMING HOLIDAY WIDGET -->
-    <div class="card" style="margin: 0;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: .7rem;">
-        <h3 style="margin: 0; font-size: .95rem; text-transform: uppercase; letter-spacing: .5px; color: var(--mut);">
-          Next Indian Holiday 🇮🇳
-        </h3>
-        <a href="{% url 'holidays' %}" style="font-size: .82rem;">View all &rarr;</a>
-      </div>
-      {% if upcoming_holiday %}
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: .8rem;">
-          <div>
-            <div style="font-weight: 700; font-size: 1.05rem;">{{ upcoming_holiday.name }}</div>
-            <div style="font-size: .88rem; color: var(--mut);">
-              {{ upcoming_holiday.date|date:"D, j F Y" }} ({{ upcoming_holiday.day }})
-            </div>
-          </div>
-          <span class="tag {{ upcoming_holiday.holiday_type }}">
-            {{ upcoming_holiday.get_holiday_type_display }}
-          </span>
-        </div>
-      {% else %}
-        <p style="margin: 0; color: var(--mut); font-size: .88rem;">No upcoming holidays found.</p>
-      {% endif %}
-    </div>
+      {% empty %}<p class="muted">No upcoming holidays on the calendar.</p>{% endfor %}
+    </section>
   </div>
 </div>
 
+<!-- THIS MONTH -->
+<section aria-label="This month">
+  <h2 class="section-title">{{ today|date:"F Y" }} so far</h2>
+  <div class="stats">
+    <div class="stat"><span>Present</span><b>{{ month.present }}</b></div>
+    <div class="stat"><span>Half days</span><b>{{ month.half }}</b></div>
+    <div class="stat warn"><span>Absent</span><b>{{ month.absent }}</b></div>
+    <div class="stat navy"><span>On leave</span><b>{{ month.leave }}</b></div>
+    <div class="stat"><span>Hours worked</span><b>{{ month.hours }}</b></div>
+    {% if month.has_schedule %}<div class="stat warn"><span>Late arrivals</span><b>{{ month.late_days }}</b></div>
+    {% if month.overtime_minutes %}<div class="stat"><span>Overtime</span><b>{{ month.overtime_text }}</b></div>{% endif %}{% endif %}
+  </div>
+</section>
+
 <!-- RECENT ATTENDANCE LOG -->
 <section class="card">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h2>My Recent Attendance Log</h2>
-    <a href="{% url 'attendance_list' %}" style="font-size: .88rem;">View complete history &rarr;</a>
-  </div>
+  <div class="card-head"><h2>My Recent Attendance</h2><span>{% if emp.is_active %}<a href="{% url 'correction_new' %}">Request a correction</a> &middot; {% endif %}<a href="{% url 'attendance_list' %}">View complete history &rarr;</a></span></div>
   {% if recent %}
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Day</th>
-            <th>Check-In</th>
-            <th>Check-Out</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in recent %}
-          <tr>
-            <td><b>{{ r.date|date:"j M Y" }}</b></td>
-            <td style="color: var(--mut);">{{ r.date|date:"l" }}</td>
-            <td>{{ r.check_in|time:"H:i"|default:"-" }}</td>
-            <td>{{ r.check_out|time:"H:i"|default:"-" }}</td>
-            <td>
-              <span class="tag {{ r.status }}">{{ r.get_status_display }}</span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% else %}
-    <p class="empty">No attendance records found yet. Punch IN above to start tracking!</p>
-  {% endif %}
+    <div class="scroll"><table>
+      <thead><tr><th>Date</th><th>Day</th><th>Check-In</th><th>Check-Out</th><th>Hours</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for r in recent %}<tr>
+        <td><b>{{ r.date|date:"j M Y" }}</b></td><td class="muted">{{ r.date|date:"l" }}</td>
+        <td>{{ r.check_in|time:"H:i"|default:"-" }}</td><td>{{ r.check_out|time:"H:i"|default:"-" }}</td>
+        <td>{{ r.hours|default:"-" }}{% if r.ends_next_day %} <small>(+1 day)</small>{% endif %}</td>
+        <td><span class="tag {{ r.status }}">{{ r.get_status_display }}</span>{% if r.day.late_minutes %} <span class="tag H">Late {{ r.day.late_text }}</span>{% endif %}{% if r.day.overtime_minutes %} <span class="tag P">OT {{ r.day.overtime_text }}</span>{% endif %}</td>
+      </tr>{% endfor %}
+      </tbody>
+    </table></div>
+  {% else %}<p class="empty">No attendance records yet.{% if punch_state == "not_in" %} Punch IN above to start tracking.{% endif %}</p>{% endif %}
+</section>
+
+<!-- PAYSLIPS -->
+<section class="card">
+  <div class="card-head"><h2>My Payslips</h2></div>
+  {% if payslips %}
+    <div class="scroll"><table>
+      <thead><tr><th>Period</th><th>Gross</th><th>Deduction</th><th>Net pay</th><th></th></tr></thead>
+      <tbody>
+      {% for s in payslips %}<tr>
+        <td><b>{{ s.year }}-{{ s.month|stringformat:"02d" }}</b></td>
+        <td>₹{{ s.gross|floatformat:2 }}</td><td>₹{{ s.deduction|floatformat:2 }}</td><td><b>₹{{ s.net|floatformat:2 }}</b></td>
+        <td><a href="{% url 'slip' s.pk %}">View payslip</a></td>
+      </tr>{% endfor %}
+      </tbody>
+    </table></div>
+  {% else %}<p class="empty">No payslips yet. They appear here once payroll has been run for you.</p>{% endif %}
 </section>
 
 <!-- MY LEAVE APPLICATIONS -->
 <section class="card">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h2>My Leave Requests</h2>
-    <a href="{% url 'leaves_list' %}" style="font-size: .88rem;">All requests &rarr;</a>
-  </div>
+  <div class="card-head"><h2>My Leave Requests</h2><a href="{% url 'leaves_list' %}">All requests &rarr;</a></div>
   {% if leaves %}
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Leave Type</th>
-            <th>Dates</th>
-            <th>Days</th>
-            <th>Reason</th>
-            <th>Status</th>
-            <th>Admin Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for l in leaves %}
-          <tr>
-            <td><b>{{ l.get_leave_type_display }}</b></td>
-            <td>{{ l.start_date|date:"j M" }} &rarr; {{ l.end_date|date:"j M Y" }}</td>
-            <td><b>{{ l.days_count }}</b></td>
-            <td style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ l.reason }}</td>
-            <td><span class="tag {{ l.status }}">{{ l.get_status_display }}</span></td>
-            <td style="color: var(--mut); font-size: .88rem;">{{ l.admin_note|default:"-" }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% else %}
-    <p class="empty">No leave requests submitted yet. Need time off? <a href="{% url 'leave_apply' %}">Apply for Leave</a>.</p>
-  {% endif %}
+    <div class="scroll"><table>
+      <thead><tr><th>Leave Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th><th>HR note</th></tr></thead>
+      <tbody>
+      {% for l in leaves %}<tr>
+        <td><b>{{ l.get_leave_type_display }}</b></td>
+        <td>{{ l.start_date|date:"j M" }} &rarr; {{ l.end_date|date:"j M Y" }}</td>
+        <td><b>{{ l.days_count }}</b></td>
+        <td class="clip">{{ l.reason }}</td>
+        <td><span class="tag {{ l.status }}">{{ l.get_status_display }}</span></td>
+        <td class="muted">{{ l.admin_note|default:"-" }}</td>
+      </tr>{% endfor %}
+      </tbody>
+    </table></div>
+  {% else %}<p class="empty">No leave requests yet.{% if emp.is_active %} Need time off? <a href="{% url 'leave_apply' %}">Apply for leave</a>.{% endif %}</p>{% endif %}
 </section>
 
 <script>
-function updatePunchClock() {
-  const el = document.getElementById('punchLiveClock');
-  if (!el) return;
-  const now = new Date();
-  el.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-updatePunchClock();
-setInterval(updatePunchClock, 1000);
+(function () {
+  var clock = document.getElementById('punchLiveClock');
+  function tick() { if (clock) clock.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'}); }
+  tick(); setInterval(tick, 1000);
+
+  // Loading state: stop double-clicks while the request is in flight.
+  var form = document.getElementById('punchForm');
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    var b = e.submitter;
+    if (b && b.name) {  // a disabled button is not sent, so carry its value in a hidden field
+      var h = document.createElement('input'); h.type = 'hidden'; h.name = b.name; h.value = b.value; form.appendChild(h);
+      var label = b.querySelector('span'); if (label) label.textContent = 'Saving…';
+    }
+    form.setAttribute('aria-busy', 'true');
+    form.querySelectorAll('button').forEach(function (x) { x.disabled = true; });
+  });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });  // back button
+})();
 </script>
 {% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}WhatsApp connection{% endblock %}
+{% block content %}
+<h1>WhatsApp connection</h1>
+<p>Link your own WhatsApp account to record attendance and read notifications. A linked, active employee profile is required. Disconnect if you change phone numbers.</p>
+{% if bot_number %}<p>Bot number: {{ bot_number }}</p>{% else %}<p>Your administrator must configure the WhatsApp Business bot before messages can be received.</p>{% endif %}
+{% if link.phone %}<p>Connected to your WhatsApp account.</p>{% endif %}
+<form method="post">{% csrf_token %}<button class="btn" name="action" value="connect">Generate a 10-minute connection code</button> <button class="btn ghost" name="action" value="disconnect">Disconnect</button></form>
+{% if token %}<section class="card"><p>Send this command to the bot from your own WhatsApp account. It can be used once. Do not share it.</p><code>LINK {{ token }}</code></section>{% endif %}
+<section class="card"><h2>Commands</h2><p>IN — punch in · OUT — punch out · STATUS — your current attendance · NOTIFICATIONS — your five latest notifications · HELP — app guidance · UNLINK — disconnect.</p><p>HR announcements arrive in the website inbox for all active organization members. Open the website to compose an announcement.</p></section>
+{% endblock %}

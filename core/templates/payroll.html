@@ -2,12 +2,13 @@
 {% block title %}Salary register{% endblock %}
 {% block content %}
 <div class="head"><h1>Salary register: {{ month_name }} {{ year }}</h1>
-  <form method="post">{% csrf_token %}<button class="btn">{% if slips %}Recalculate payroll{% else %}Generate payroll{% endif %}</button></form></div>
+  {% if perms.core.generate_payroll %}<form method="post">{% csrf_token %}<button class="btn">{% if slips %}Recalculate payroll{% else %}Generate payroll{% endif %}</button></form>{% endif %}</div>
+<p><a class="btn ghost" href="{% url 'payroll_runs' %}">Review and finalize payroll runs</a> <a class="btn ghost" href="{% url 'payroll_csv' %}?month={{ month }}&year={{ year }}">Export CSV</a></p>
 {% include "partials/period.html" %}
 <section class="card"><div class="scroll"><table>
-  <tr><th>Employee</th><th>Gross</th><th>Absent days</th><th>Deduction</th><th>Net</th><th></th></tr>
-  {% for s in slips %}<tr><td>{{ s.emp.name }}</td><td>₹{{ s.gross }}</td><td>{{ s.absent_days }}</td><td>₹{{ s.deduction }}</td><td><b>₹{{ s.net }}</b></td><td class="row-actions"><a href="{% url 'slip' s.pk %}">View salary slip</a></td></tr>
-  {% empty %}<tr><td colspan="6" class="empty">No payroll for {{ month_name }} {{ year }} yet. Generate it with the button above.</td></tr>{% endfor %}
-  {% if slips %}<tr class="total"><td colspan="4">Total net payout</td><td colspan="2">₹{{ total }}</td></tr>{% endif %}
+  <tr><th>Employee</th><th>Gross</th><th>Absent days</th><th>Deduction</th>{% if any_overtime %}<th>Overtime</th>{% endif %}<th>Net</th><th></th></tr>
+  {% for s in slips %}<tr><td>{{ s.emp.name }}</td><td>₹{{ s.gross }}</td><td>{{ s.absent_days }}</td><td>₹{{ s.deduction }}</td>{% if any_overtime %}<td>{% if s.overtime_pay %}+ ₹{{ s.overtime_pay }}{% else %}-{% endif %}</td>{% endif %}<td><b>₹{{ s.net }}</b></td><td class="row-actions"><a href="{% url 'slip' s.pk %}">View salary slip</a></td></tr>
+  {% empty %}<tr><td colspan="{% if any_overtime %}7{% else %}6{% endif %}" class="empty">No payroll for {{ month_name }} {{ year }} yet. Generate it with the button above.</td></tr>{% endfor %}
+  {% if slips %}<tr class="total"><td colspan="{% if any_overtime %}5{% else %}4{% endif %}">Total net payout</td><td colspan="2">₹{{ total }}</td></tr>{% endif %}
 </table></div></section>
 {% endblock %}

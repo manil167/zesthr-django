@@ -1,47 +1,101 @@
-{% extends "base.html" %}
+{% extends "auth_base.html" %}
+{% load socialaccount %}
+
 {% block title %}Sign In{% endblock %}
-{% block guest %}
-<div class="login">
-  <section class="login-art">
-    <div class="login-brand-header">
-      <svg class="hros-logo-icon" width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="hrosGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#38bdf8" />
-            <stop offset="50%" stop-color="#14b8a6" />
-            <stop offset="100%" stop-color="#10b981" />
-          </linearGradient>
-        </defs>
-        <rect width="40" height="40" rx="10" fill="url(#hrosGradLogin)" />
-        <path d="M12 11V29" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
-        <path d="M28 11V29" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
-        <path d="M12 20H28" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
-        <circle cx="20" cy="20" r="3.5" fill="#ffffff"/>
-        <circle cx="20" cy="20" r="1.5" fill="#0f766e"/>
-        <circle cx="29" cy="11" r="2.2" fill="#ffffff"/>
-      </svg>
-      <div>
-        <h1 class="hros-display">HROS</h1>
-        <span class="hros-pill-badge">ENTERPRISE OS</span>
-      </div>
-    </div>
-    <p class="login-lead">Human Resources Operating System. Intelligent daily attendance tracking, automated deduction compute, and instant monthly salary slips.</p>
-    <div class="login-demo-pill">
-      <span class="demo-badge">Quick Demo Access</span>
-      <div style="display: flex; flex-direction: column; gap: .45rem; font-size: .88rem; margin-top: .3rem;">
-        <div><b>HR Admin:</b> <code>admin</code> &bull; <code>admin123</code></div>
-        <div><b>Employee:</b> <code>aarav.sharma</code> &bull; <code>emp123</code> <small style="opacity:.8;">(all 10 employees)</small></div>
-      </div>
-    </div>
-    <a href="{% url 'home' %}" class="login-back-link">← Return to HROS Home</a>
-  </section>
-  <form method="post" class="login-card">{% csrf_token %}
+
+{% block art_extra %}
+{% endblock %}
+
+{% block card %}
+<form method="post" class="login-card">
+    {% csrf_token %}
+
     <h2>Sign in to HROS</h2>
-    <p class="login-subtext">Access your workforce dashboard and payroll controls.</p>
-    {% if form.errors %}<div class="toast error">Invalid username or password. Please verify and try again.</div>{% endif %}
-    <label>Username <input name="username" autofocus required placeholder="e.g. admin"></label>
-    <label>Password <input type="password" name="password" required placeholder="••••••••"></label>
-    <button class="btn hros-btn-lg">Authenticate & Enter</button>
-  </form>
-</div>
+
+    <p class="login-subtext">
+        Access your workforce dashboard and payroll controls.
+    </p>
+
+    {% for e in form.non_field_errors %}
+        <div class="toast error" role="alert">
+            {{ e }}
+        </div>
+    {% endfor %}
+
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <label>
+        {{ form.username.label }}
+
+        <input
+            name="username"
+            {% if neon_auth_enabled %}type="email"{% endif %}
+            autofocus
+            required
+            autocomplete="{% if neon_auth_enabled %}email{% else %}username{% endif %}"
+            placeholder="{% if neon_auth_enabled %}Enter your registered email{% else %}Enter your username{% endif %}"
+        >
+    </label>
+
+    {% for e in form.username.errors %}
+        <div class="toast error" role="alert">
+            {{ e }}
+        </div>
+    {% endfor %}
+
+    <label>
+        Password
+
+        <input
+            type="password"
+            name="password"
+            required
+            autocomplete="current-password"
+            placeholder="••••••••"
+        >
+    </label>
+
+    {% for e in form.password.errors %}
+        <div class="toast error" role="alert">
+            {{ e }}
+        </div>
+    {% endfor %}
+
+    <button
+        type="submit"
+        class="btn hros-btn-lg"
+    >
+        Authenticate &amp; Enter
+    </button>
+
+    <p class="login-subtext" style="margin-top:1rem">
+        <a href="{% url 'password_reset' %}">
+            Forgot your password?
+        </a>
+    </p>
+
+    {% if google_login_enabled %}
+
+        <div class="auth-divider">
+            <span>or continue with</span>
+        </div>
+
+        <a
+            href="{% provider_login_url 'google' process='login' %}"
+            class="btn ghost hros-btn-lg google-auth-btn"
+        >
+            Continue with Google
+        </a>
+
+    {% endif %}
+
+    <p class="login-subtext auth-footer">
+        Don't have an account?
+        <a href="{% url 'signup' %}">
+            Create an account
+        </a>
+    </p>
+
+{% if neon_auth_enabled %}<p><a href="{% url 'neon_verify_email' %}">Verify your email</a></p>{% endif %}
+</form>
 {% endblock %}

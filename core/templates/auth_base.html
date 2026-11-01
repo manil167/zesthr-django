@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block guest %}
+<div class="login">
+  <section class="login-art">
+    <div class="login-brand-header">
+      <svg class="hros-logo-icon" width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hrosGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#38bdf8" />
+            <stop offset="50%" stop-color="#14b8a6" />
+            <stop offset="100%" stop-color="#10b981" />
+          </linearGradient>
+        </defs>
+        <rect width="40" height="40" rx="10" fill="url(#hrosGradLogin)" />
+        <path d="M12 11V29" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M28 11V29" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M12 20H28" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="3.5" fill="#ffffff"/>
+        <circle cx="20" cy="20" r="1.5" fill="#0f766e"/>
+        <circle cx="29" cy="11" r="2.2" fill="#ffffff"/>
+      </svg>
+      <div>
+        <h1 class="hros-display">HROS</h1>
+        <span class="hros-pill-badge">ENTERPRISE OS</span>
+      </div>
+    </div>
+    <p class="login-lead">Human Resources Operating System. Intelligent daily attendance tracking, automated deduction compute, and instant monthly salary slips.</p>
+    {% block art_extra %}{% endblock %}
+    <a href="{% url 'home' %}" class="login-back-link">← Return to HROS Home</a>
+  </section>
+  {% block card %}{% endblock %}
+</div>
+{% endblock %}

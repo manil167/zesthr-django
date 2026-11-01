@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Scheduled employment changes<nav aria-label="Pagination">{% if changes.has_previous %}<a href="?status={{ status }}&page={{ changes.previous_page_number }}">Previous</a>{% endif %} Page {{ changes.number }} of {{ changes.paginator.num_pages }} {% if changes.has_next %}<a href="?status={{ status }}&page={{ changes.next_page_number }}">Next</a>{% endif %}</nav>
+{% endblock %}
+{% block content %}
+<div class="head"><h1>Scheduled employment changes</h1></div>
+<form method="get" class="filters"><select name="status" onchange="this.form.submit()"><option value="pending" {% if status == "pending" %}selected{% endif %}>Pending</option><option value="due" {% if status == "due" %}selected{% endif %}>Due</option><option value="applied" {% if status == "applied" %}selected{% endif %}>Applied</option></select></form>
+<section class="card"><div class="scroll"><table><tr><th>Employee</th><th>Effective</th><th>Change</th><th>Reason</th><th>Applied</th><th></th></tr>{% for change in changes %}<tr><td>{{ change.employee }}</td><td>{{ change.effective_date }}</td><td>{{ change.designation|default:change.department|default:"—" }}</td><td>{{ change.reason }}</td><td>{{ change.applied_at|default:"—" }}</td><td>{% if not change.applied_at and change.effective_date <= today %}<form method="post" action="{% url 'apply_scheduled_employment_change' change.pk %}">{% csrf_token %}<button class="btn sm">Apply</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="empty">No changes found.</td></tr>{% endfor %}</table></div></section>
+<nav aria-label="Pagination">{% if changes.has_previous %}<a href="?status={{ status }}&page={{ changes.previous_page_number }}">Previous</a>{% endif %} Page {{ changes.number }} of {{ changes.paginator.num_pages }} {% if changes.has_next %}<a href="?status={{ status }}&page={{ changes.next_page_number }}">Next</a>{% endif %}</nav>
+{% endblock %}

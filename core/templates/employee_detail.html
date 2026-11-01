@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ emp.name }}{% endblock %}
+{% block content %}
+<div class="head">
+  <div>
+    <h1>{{ emp.name }}</h1>
+    <p class="muted">{{ emp.employee_number|default:"" }} · <span class="tag {% if emp.is_active %}P{% else %}A{% endif %}">{{ emp.get_employment_status_display }}</span></p>
+  </div>
+  <div class="row-actions">
+    {% if access.personal %}<a class="btn ghost" href="{% url 'employee_documents' emp.pk %}">Documents</a>{% endif %}
+    {% if access.employment %}<a class="btn ghost" href="{% url 'employee_leave_balances' emp.pk %}">Leave balances</a>{% endif %}
+    {% if access.is_self and emp.is_active %}<a class="btn" href="{% url 'my_profile_edit' %}">Edit my details</a>{% endif %}
+    {% if perms.core.change_employee %}<a class="btn" href="{% url 'employee_edit' emp.pk %}">Edit employee</a>{% endif %}
+    {% if perms.core.deactivate_employee %}
+      {% if emp.is_active %}<a class="btn ghost" href="{% url 'employee_deactivate' emp.pk %}">Deactivate</a>
+      {% else %}<form method="post" action="{% url 'employee_reactivate' emp.pk %}" style="display:inline">{% csrf_token %}<button class="btn ghost">Reactivate</button></form>{% endif %}
+    {% endif %}
+    {% if perms.core.view_all_attendance and perms.core.view_employee %}<a class="btn ghost" href="{% url 'attendance_list' %}?emp={{ emp.pk }}">Attendance</a>{% endif %}
+    {% if perms.core.view_employee %}<a class="btn ghost" href="{% url 'employee_list' %}">All employees</a>{% endif %}
+  </div>
+</div>
+
+<div class="profile-grid">
+  <section class="card">
+    <h2>Work</h2>
+    <dl class="dl">
+      <dt>Designation</dt><dd>{{ emp.designation }}</dd>
+      <dt>Position</dt><dd>{{ emp.position|default:"—" }}</dd>
+      <dt>Department</dt><dd>{{ emp.department|default:"—" }}</dd>
+      <dt>Organization</dt><dd>{{ emp.organization|default:"—" }}</dd>
+      <dt>Company</dt><dd>{{ emp.company|default:"—" }}</dd>
+      <dt>Branch</dt><dd>{{ emp.branch|default:"—" }}</dd>
+      <dt>Team</dt><dd>{{ emp.team|default:"—" }}</dd>
+      <dt>Job grade</dt><dd>{{ emp.job_grade|default:"—" }}</dd>
+      <dt>Cost center</dt><dd>{{ emp.cost_center|default:"—" }}</dd>
+      <dt>Manager</dt><dd>{% if emp.manager %}{% if perms.core.view_employee or access.is_self %}<a href="{% url 'employee_detail' emp.manager.pk %}">{{ emp.manager.name }}</a>{% else %}{{ emp.manager.name }}{% endif %}{% else %}—{% endif %}</dd>
+      <dt>Work location</dt><dd>{{ emp.work_location|default:"—" }}</dd>
+      <dt>Email</dt><dd>{{ emp.email|default:"—" }}</dd>
+      <dt>Phone</dt><dd>{{ emp.phone|default:"—" }}</dd>
+    </dl>
+  </section>
+
+  {% if access.employment %}
+  <section class="card">
+    <h2>Employment</h2>
+    <dl class="dl">
+      <dt>Employment type</dt><dd>{{ emp.employment_type|default:"—" }}</dd>
+      <dt>Work schedule</dt><dd>{{ emp.work_schedule|default:"—" }}</dd>
+      <dt>Joined</dt><dd>{{ emp.joined_on }}</dd>
+      <dt>Confirmation</dt><dd>{{ emp.confirmation_date|default:"—" }}</dd>
+      {% if emp.separation_date %}<dt>Separation date</dt><dd>{{ emp.separation_date }}</dd>{% endif %}
+      {% if emp.separation_reason %}<dt>Reason</dt><dd>{{ emp.separation_reason }}</dd>{% endif %}
+      <dt>Login account</dt><dd>{% if emp.user %}{{ emp.user.username }}{% if not emp.user.is_active %} <span class="tag A">disabled</span>{% endif %}{% else %}not linked{% endif %}</dd>
+    </dl>
+  </section>
+  {% endif %}
+
+  {% if access.pay %}
+  <section class="card">
+    <h2>Pay</h2>
+    <dl class="dl"><dt>Basic salary</dt><dd>₹{{ emp.basic_salary|floatformat:2 }}</dd></dl>
+  </section>
+  {% endif %}
+
+  {% if access.personal %}
+  <section class="card">
+    <h2>Personal details</h2>
+    <dl class="dl">
+      <dt>Address</dt><dd>{{ emp.address|default:"—"|linebreaksbr }}</dd>
+      <dt>Emergency contact</dt><dd>{{ emp.emergency_contact_name|default:"—" }}{% if emp.emergency_contact_phone %} · {{ emp.emergency_contact_phone }}{% endif %}</dd>
+    </dl>
+  </section>
+  {% endif %}
+</div>
+
+{% if access.employment %}
+<section class="card">
+  <h2>Direct reports</h2>
+  {% for r in reports %}<a class="tag" href="{% url 'employee_detail' r.pk %}">{{ r.name }}{% if r.position %} · {{ r.position }}{% endif %}</a> {% empty %}<p class="muted">No direct reports.</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h2>Employment history</h2>
+  <div class="scroll"><table>
+    <tr><th>When</th><th>Change</th><th>From</th><th>To</th><th>By</th></tr>
+    {% for h in history %}<tr><td>{{ h.changed_at|date:"Y-m-d H:i" }}</td><td>{% if h.field == 'created' %}Record created{% else %}{{ h.field|title }}{% endif %}</td><td>{{ h.old_value|default:"—" }}</td><td>{{ h.new_value|default:"—" }}</td><td>{{ h.changed_by.username|default:"system" }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">No changes recorded yet.</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endif %}
+{% endblock %}

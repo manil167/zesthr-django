@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Request a correction{% endblock %}
+{% block content %}
+<div class="head"><h1>Request an attendance correction</h1></div>
+<section class="card">
+  <p>Forgot to punch, or the record is wrong? Describe what it <b>should</b> say. Your manager or HR will review it, and if approved the record is updated and the change is kept in the history.</p>
+  <p class="muted">You can ask for corrections up to {{ window }} days back. One open request per day.</p>
+</section>
+<form method="post" class="card form">{% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="toast error" role="alert">{{ e }}</div>{% endfor %}
+  {% for f in form %}<label>{{ f.label }} {{ f }}{% if f.help_text %}<small>{{ f.help_text }}</small>{% endif %}{% for e in f.errors %}<small class="err">{{ e }}</small>{% endfor %}</label>{% endfor %}
+  <div class="actions"><button class="btn">Send request</button><a class="btn ghost" href="{% url 'my_corrections' %}">Cancel</a></div>
+</form>
+{% endblock %}

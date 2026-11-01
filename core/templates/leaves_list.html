@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Leave Management | HROS{% endblock %}
+{% block title %}Leave Management | HROS<nav aria-label="Pagination">{% if leaves.has_previous %}<a href="?status={{ selected_status }}&mine={{ request.GET.mine }}&page={{ leaves.previous_page_number }}">Previous</a>{% endif %}
+Page {{ leaves.number }} of {{ leaves.paginator.num_pages }} {% if leaves.has_next %}<a href="?status={{ selected_status }}&mine={{ request.GET.mine }}&page={{ leaves.next_page_number }}">Next</a>{% endif %}</nav>
+{% endblock %}
 
 {% block content %}
 <div class="head">
@@ -20,7 +22,8 @@
     </p>
   </div>
   <div class="actions">
-    <a class="btn" href="{% url 'leave_apply' %}">+ Apply for Leave</a>
+    {% if user.employee_profile.is_active %}<a class="btn" href="{% url 'leave_apply' %}">+ Apply for Leave</a>{% endif %}
+    {% if user.employee_profile %}<a class="btn ghost" href="?mine=1">My requests</a>{% endif %}
     <a class="btn ghost" href="{% url 'holidays' %}">🇮🇳 Govt Holidays</a>
   </div>
 </div>
@@ -114,7 +117,14 @@
           </td>
           {% if is_staff %}
             <td>
-              {% if l.status == "PENDING" %}
+              {% if not l.can_review %}<span>View only</span>
+                {% elif l.status == "APPROVED" %}
+                  <form method="post" action="{% url 'leave_action' l.id %}">
+                    {% csrf_token %}
+                    <label>Cancellation reason <input name="admin_note" required maxlength="255"></label>
+                    <button class="btn sm ghost danger" name="action" value="cancel">Cancel and restore attendance</button>
+                  </form>
+                {% elif l.status == "PENDING" %}
                 <form method="post" action="{% url 'leave_action' l.id %}" style="display: flex; flex-direction: column; gap: .4rem;">
                   {% csrf_token %}
                   <input type="text" name="admin_note" placeholder="Remark / reason (optional)"
@@ -143,6 +153,7 @@
           {% else %}
             <td style="font-size: .88rem; color: var(--mut);">
               {{ l.admin_note|default:"-" }}
+              {% if l.status == "PENDING" %}<form method="post" action="{% url 'leave_cancel_pending' l.pk %}">{% csrf_token %}<label>Cancellation reason <input name="reason" required maxlength="255"></label><button class="btn ghost sm">Cancel request</button></form>{% endif %}
             </td>
           {% endif %}
         </tr>
@@ -160,4 +171,6 @@
     </p>
   {% endif %}
 </section>
+<nav aria-label="Pagination">{% if leaves.has_previous %}<a href="?status={{ selected_status }}&mine={{ request.GET.mine }}&page={{ leaves.previous_page_number }}">Previous</a>{% endif %}
+Page {{ leaves.number }} of {{ leaves.paginator.num_pages }} {% if leaves.has_next %}<a href="?status={{ selected_status }}&mine={{ request.GET.mine }}&page={{ leaves.next_page_number }}">Next</a>{% endif %}</nav>
 {% endblock %}

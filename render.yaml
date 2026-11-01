@@ -1,0 +1,94 @@
+services:
+  - type: web
+    name: zesthr-django
+    runtime: python
+    plan: free
+    healthCheckPath: /healthz/
+    autoDeployTrigger: checksPass
+
+    buildCommand: |
+      pip install -r requirements.txt
+      npm ci --include=dev
+      npm run build
+
+    startCommand: |
+      python scripts/start_server.py
+
+    envVars:
+      # Add DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL and
+      # DJANGO_SUPERUSER_PASSWORD privately in Render for local-password bootstrap.
+      # With Neon Auth, use NEON_ADMIN_USER_ID + NEON_ADMIN_EMAIL instead.
+      - key: DJANGO_BOOTSTRAP_ADMIN
+        value: "False"
+
+      - key: NEON_AUTH_APP_ORIGIN
+        value: https://zesthr-django.onrender.com
+
+      - key: DJANGO_SETTINGS_MODULE
+        value: payroll_project.settings.production
+
+      - key: DJANGO_DEBUG
+        value: "False"
+
+      - key: DJANGO_SSL_REDIRECT
+        value: "True"
+
+      - key: DJANGO_TRUST_PROXY_SSL_HEADER
+        value: "True"
+
+      - key: DB_SSLMODE
+        value: require
+
+      - key: DB_POOLED
+        value: "True"
+
+      - key: DB_DISABLE_SERVER_SIDE_CURSORS
+        value: "True"
+
+      - key: DB_CONNECT_TIMEOUT
+        value: "10"
+
+      - key: DB_CONN_MAX_AGE
+        value: "0"
+
+      - key: DJANGO_HSTS_SECONDS
+        value: "0"
+
+      - key: DJANGO_HSTS_INCLUDE_SUBDOMAINS
+        value: "False"
+
+      - key: DJANGO_HSTS_PRELOAD
+        value: "False"
+
+      - key: DJANGO_LOG_LEVEL
+        value: INFO
+
+      - key: DATABASE_URL
+        sync: false
+
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        sync: false
+
+      - key: DJANGO_EMAIL_HOST
+        sync: false
+
+      - key: DJANGO_EMAIL_PORT
+        value: "587"
+
+      - key: DJANGO_EMAIL_HOST_USER
+        sync: false
+
+      - key: DJANGO_EMAIL_HOST_PASSWORD
+        sync: false
+
+      - key: DJANGO_EMAIL_USE_TLS
+        value: "True"
+
+      - key: DJANGO_DEFAULT_FROM_EMAIL
+        sync: false

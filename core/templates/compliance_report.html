@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Audit activity report{% endblock %}
+{% block content %}
+<div class="head"><h1>Audit activity report</h1></div>
+<section class="card"><form method="get" class="filters">{{ form.as_p }}<button class="btn">View report</button><button class="btn ghost" name="export" value="csv">Export CSV</button></form></section>
+<section class="card"><div class="scroll"><table><thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Record</th><th>Explanation</th></tr></thead><tbody>
+{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="5">No audit activity matches this filter.</td></tr>{% endfor %}</tbody></table></div>
+{% if page %}<nav aria-label="Pagination">{% if page.has_previous %}<a href="?{{ filter_query }}&page={{ page.previous_page_number }}">Previous</a>{% endif %}
+Page {{ page.number }} of {{ page.paginator.num_pages }} {% if page.has_next %}<a href="?{{ filter_query }}&page={{ page.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}</section>
+{% endblock %}

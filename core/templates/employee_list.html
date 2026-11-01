@@ -1,17 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Employees{% endblock %}
 {% block content %}
-<div class="head"><h1>Employees</h1><a class="btn" href="{% url 'employee_add' %}">Add employee</a></div>
+<div class="head"><h1>Employees</h1>{% if perms.core.add_employee %}<a class="btn" href="{% url 'employee_add' %}">Add employee</a>{% endif %}</div>
 <form method="get" class="filters">
-  <input name="q" value="{{ q }}" placeholder="Search name or designation">
-  <select name="status" onchange="this.form.submit()"><option value="">All</option><option value="active" {% if status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option></select>
-  <button class="btn ghost sm">Search</button>
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name, ID, department, email" aria-label="Search employees">
+  <select name="department" aria-label="Department" onchange="this.form.submit()"><option value="">All departments</option>{% for d in departments %}<option value="{{ d.pk }}" {% if department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>
+  <select name="status" aria-label="Status" onchange="this.form.submit()"><option value="">All statuses</option><option value="active" {% if status == 'active' %}selected{% endif %}>Active (all)</option><option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive (all)</option>{% for code, label in statuses %}<option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <button class="btn ghost sm">Search</button>{% if q or status or department %}<a class="btn ghost sm" href="{% url 'employee_list' %}">Clear</a>{% endif %}
 </form>
 <section class="card"><div class="scroll"><table>
-  <tr><th>Name</th><th>Designation</th><th>Basic salary</th><th>Phone</th><th>Status</th><th></th></tr>
-  {% for e in employees %}<tr><td>{{ e.name }}</td><td>{{ e.designation }}</td><td>₹{{ e.basic_salary|floatformat:2 }}</td><td>{{ e.phone|default:"-" }}</td>
-    <td><span class="tag {% if e.is_active %}P{% else %}A{% endif %}">{% if e.is_active %}Active{% else %}Inactive{% endif %}</span></td>
-    <td class="row-actions"><a href="{% url 'attendance_list' %}?emp={{ e.id }}">Attendance</a><a href="{% url 'employee_edit' e.pk %}">Edit</a><a class="danger" href="{% url 'employee_delete' e.pk %}">Delete</a></td></tr>
-  {% empty %}<tr><td colspan="6" class="empty">No employees found. <a href="{% url 'employee_add' %}">Add the first one.</a></td></tr>{% endfor %}
-</table></div></section>
+  <tr><th>ID</th><th>Name</th><th>Department</th><th>Designation</th>{% if perms.core.view_employee_pay %}<th>Basic salary</th>{% endif %}<th>Phone</th><th>Status</th><th></th></tr>
+  {% for e in employees %}<tr><td>{{ e.employee_number|default:"-" }}</td><td><a href="{% url 'employee_detail' e.pk %}">{{ e.name }}</a></td><td>{{ e.department|default:"-" }}</td><td>{{ e.position|default:e.designation }}</td>{% if perms.core.view_employee_pay %}<td>₹{{ e.basic_salary|floatformat:2 }}</td>{% endif %}<td>{{ e.phone|default:"-" }}</td>
+    <td><span class="tag {% if e.is_active %}P{% else %}A{% endif %}">{{ e.get_employment_status_display }}</span></td>
+    <td class="row-actions">{% if perms.core.view_all_attendance %}<a href="{% url 'attendance_list' %}?emp={{ e.id }}">Attendance</a>{% endif %}{% if perms.core.change_employee %}<a href="{% url 'employee_edit' e.pk %}">Edit</a>{% endif %}{% if perms.core.deactivate_employee %}{% if e.is_active %}<a class="danger" href="{% url 'employee_deactivate' e.pk %}">Deactivate</a>{% else %}<form method="post" action="{% url 'employee_reactivate' e.pk %}" style="display:inline">{% csrf_token %}<button class="linklike">Reactivate</button></form>{% endif %}{% endif %}{% if perms.core.delete_employee %}<a class="danger" href="{% url 'employee_delete' e.pk %}">Delete</a>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="8" class="empty">No employees found.{% if perms.core.add_employee %} <a href="{% url 'employee_add' %}">Add the first one.</a>{% endif %}</td></tr>{% endfor %}
+</table></div>
+{% if is_paginated %}<nav class="pager" aria-label="Pages">
+  <span>{{ total_matches }} employee{{ total_matches|pluralize }} · page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+  {% if page_obj.has_previous %}<a href="?{% querystring page=1 %}">« First</a><a href="?{% querystring page=page_obj.previous_page_number %}">‹ Previous</a>{% endif %}
+  {% if page_obj.has_next %}<a href="?{% querystring page=page_obj.next_page_number %}">Next ›</a><a href="?{% querystring page=paginator.num_pages %}">Last »</a>{% endif %}
+</nav>{% else %}<p class="pager"><span>{{ total_matches }} employee{{ total_matches|pluralize }}</span></p>{% endif %}
+</section>
 {% endblock %}

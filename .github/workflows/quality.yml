@@ -1,0 +1,95 @@
+name: HROS quality
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    name: tests (${{ matrix.database }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: hros
+          POSTGRES_USER: hros
+          POSTGRES_PASSWORD: hros-integration-only
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U hros -d hros"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DJANGO_LOAD_DOTENV: "False"
+      TEST_DB_NAME: hros
+      TEST_DB_USER: hros
+      TEST_DB_PASSWORD: hros-integration-only
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_PORT: "5432"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade "pip>=26.2.2,<27"
+      - run: python -m pip install -r requirements/development.txt
+      - name: Build authentication browser assets
+        run: |
+          npm ci --include=dev
+          npm run build:auth
+      - run: ruff check --no-cache --select E9,F63,F7,F82 core apps payroll_project scripts
+      - name: Select test database
+        run: |
+          if [ "${{ matrix.database }}" = "postgres" ]; then
+            echo "DJANGO_SETTINGS_MODULE=payroll_project.settings.test_postgres" >> "$GITHUB_ENV"
+          else
+            echo "DJANGO_SETTINGS_MODULE=payroll_project.settings.test" >> "$GITHUB_ENV"
+          fi
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python -m coverage run --source=core,apps manage.py test
+      - name: Verify PostgreSQL backup recovery with isolated fixture data
+        if: matrix.database == 'postgres'
+        run: |
+          python manage.py migrate --noinput
+          python manage.py shell -c "from core.tests.test_database import MigrateLegacyDataTests; exec(MigrateLegacyDataTests.POPULATE)"
+          docker exec '${{ job.services.postgres.id }}' pg_dump -U hros -d hros --format=custom --no-owner --no-acl > "$RUNNER_TEMP/hros-recovery.dump"
+          docker exec '${{ job.services.postgres.id }}' createdb -U hros hros_restore_verification
+          docker exec -i '${{ job.services.postgres.id }}' pg_restore -U hros --no-owner --no-acl --exit-on-error --dbname=hros_restore_verification < "$RUNNER_TEMP/hros-recovery.dump"
+          TEST_DB_NAME=hros_restore_verification python manage.py shell -c "from decimal import Decimal; from core.models import Employee, Salary, AttendanceAudit; a=Employee.objects.get(name='Amy'); assert a.user.username == 'amy'; assert a.manager.name == 'Boss'; assert a.basic_salary == Decimal('3000.25'); assert Salary.objects.get(emp=a).net == Decimal('2900.10'); assert AttendanceAudit.objects.get().changed_by.username == 'amy'; print('Employee links, financial precision and audit history survived recovery.')"
+      - run: python -m coverage report --fail-under=75
+      - run: python -m coverage xml
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage-${{ matrix.database }}
+          path: coverage.xml
+          retention-days: 7
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade "pip>=26.2.2,<27"
+      - run: python -m pip install -r requirements/development.txt
+      - run: python -m pip_audit
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: docker build --tag hros-verification:ci .
+      - name: Verify non-root runtime
+        run: docker run --rm hros-verification:ci python -c 'import os; assert os.getuid() == 10001'
+      - name: Verify migration startup
+        run: docker run --rm -e DJANGO_SETTINGS_MODULE=payroll_project.settings.test hros-verification:ci python scripts/start_server.py --prepare-only

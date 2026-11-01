@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="head"><h1>{{ title }}</h1></div>
+<form method="post" class="card form">{% csrf_token %}
+  <p>Delete the attendance entry <b>{{ object }}</b>? The entry is removed, but a record of what it contained, who deleted it and why stays in the attendance history.</p>
+  <label>Reason for deleting <input name="reason" maxlength="255" required value="{{ request.POST.reason }}">{% if reason_error %}<small class="err">A reason is required.</small>{% endif %}</label>
+  <div class="actions"><button class="btn danger-btn">Delete</button><a class="btn ghost" href="{% url 'attendance_list' %}">Keep it</a></div>
+</form>
+{% endblock %}

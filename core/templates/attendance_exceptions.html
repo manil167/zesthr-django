@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{% if preset == 'missing' %}Missing punches{% else %}Attendance exceptions{% endif %}{% endblock %}
+{% block content %}
+<div class="head"><h1>{% if preset == 'missing' %}Missing punches{% else %}Attendance exceptions{% endif %}</h1>
+  <div class="row-actions"><a class="btn ghost sm" href="{% url 'attendance_register' %}">Daily register</a>
+  {% if preset == 'missing' %}<a class="btn ghost sm" href="{% url 'attendance_exceptions' %}">All exceptions</a>{% else %}<a class="btn ghost sm" href="{% url 'attendance_missing_punches' %}">Missing punches only</a>{% endif %}</div></div>
+<p class="muted">Days that need attention. Fix one and it leaves this list. Today is never listed as missing, because the day is not over.</p>
+<form method="get" class="filters">
+  <label>From <input type="date" name="from" value="{{ d_from|date:'Y-m-d' }}"></label>
+  <label>To <input type="date" name="to" value="{{ d_to|date:'Y-m-d' }}"></label>
+  <label>Department <select name="department"><option value="">All</option>{% for d in departments %}<option value="{{ d.pk }}" {% if department == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
+  <label>Employee <select name="emp"><option value="">Everyone</option>{% for e in employees %}<option value="{{ e.pk }}" {% if emp == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>{% endfor %}</select></label>
+  <fieldset class="kinds"><legend>Show</legend>{% for code, label in kinds %}<label><input type="checkbox" name="kind" value="{{ code }}" {% if code in chosen %}checked{% endif %}> {{ label }}</label>{% endfor %}</fieldset>
+  <button class="btn ghost sm">Apply</button>
+</form>
+{% if error %}<div class="toast error" role="alert">{{ error }}</div>{% endif %}
+<section class="card"><div class="scroll"><table>
+  <tr><th>Date</th><th>Employee</th><th>Problem</th><th>Detail</th><th></th></tr>
+  {% for r in page %}<tr>
+    <td>{{ r.date|date:"D, j M Y" }}</td><td><a href="{% url 'employee_detail' r.emp.pk %}">{{ r.emp.name }}</a></td>
+    <td><span class="tag {% if r.kind == 'overtime' %}P{% elif r.kind == 'late' or r.kind == 'early' %}H{% else %}A{% endif %}">{{ r.label }}</span></td>
+    <td>{{ r.detail }}</td>
+    <td class="row-actions">{% if r.record %}{% if perms.core.change_attendance %}<a href="{% url 'attendance_edit' r.record.pk %}">Fix</a>{% endif %}{% elif perms.core.add_attendance %}<a href="{% url 'attendance_add' %}?emp={{ r.emp.pk }}&date={{ r.date|date:'Y-m-d' }}">Add entry</a>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="5" class="empty">{% if error %}Choose a shorter range.{% else %}No exceptions in this period. 🎉{% endif %}</td></tr>{% endfor %}
+</table></div>
+{% if page.paginator.num_pages > 1 %}<nav class="pager" aria-label="Pages"><span>{{ total }} item{{ total|pluralize }} · page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_previous %}<a href="?{% querystring page=page.previous_page_number %}">‹ Previous</a>{% endif %}{% if page.has_next %}<a href="?{% querystring page=page.next_page_number %}">Next ›</a>{% endif %}</nav>
+{% else %}<p class="pager"><span>{{ total }} item{{ total|pluralize }}</span></p>{% endif %}
+</section>
+{% endblock %}

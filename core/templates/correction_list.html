@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'mine' %}My correction requests{% else %}Correction requests{% endif %}{% endblock %}
+{% block content %}
+<div class="head"><h1>{% if mode == 'mine' %}My correction requests{% else %}Correction requests to review{% endif %}</h1>
+  {% if mode == 'mine' %}{% if user.employee_profile.is_active %}<a class="btn" href="{% url 'correction_new' %}">New request</a>{% endif %}{% endif %}</div>
+{% if mode == 'review' %}
+<form method="get" class="filters"><label>Show <select name="status" onchange="this.form.submit()"><option value="">All</option>{% for code, label in statuses %}<option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label></form>
+{% endif %}
+<section class="card"><div class="scroll"><table>
+  <tr><th>Requested</th>{% if mode == 'review' %}<th>Employee</th>{% endif %}<th>Day</th><th>Was</th><th>Should be</th><th>Reason</th><th>Status</th><th></th></tr>
+  {% for c in items %}<tr>
+    <td>{{ c.created_at|date:"j M, H:i" }}</td>
+    {% if mode == 'review' %}<td>{{ c.emp.name }}</td>{% endif %}
+    <td><b>{{ c.date|date:"D, j M Y" }}</b></td>
+    <td class="muted">{% if c.original_values %}{{ c.original_values.status }} {{ c.original_values.check_in|default:"--" }}{% if c.original_values.check_in %} - {{ c.original_values.check_out|default:"--" }}{% endif %}{% else %}no record{% endif %}</td>
+    <td>{{ c.requested_summary }}</td>
+    <td class="clip" title="{{ c.reason }}">{{ c.reason }}</td>
+    <td><span class="tag {{ c.status }}">{{ c.get_status_display }}</span>{% if c.decision_note %}<div class="muted">{{ c.decision_note }}</div>{% endif %}{% if c.decided_by %}<div class="muted">by {{ c.decided_by.username }}</div>{% endif %}</td>
+    <td class="row-actions">
+      {% if mode == 'mine' and c.status == 'PENDING' %}<form method="post" action="{% url 'correction_cancel' c.pk %}" style="display:inline">{% csrf_token %}<button class="linklike">Cancel</button></form>{% endif %}
+      {% if mode == 'review' and c.status == 'PENDING' %}
+      <form method="post" action="{% url 'correction_decide' c.pk %}" class="inline">{% csrf_token %}
+        <input name="note" placeholder="Note (required to reject)" maxlength="255" aria-label="Decision note">
+        <button class="btn sm" name="action" value="approve">Approve</button>
+        <button class="btn ghost sm" name="action" value="reject">Reject</button>
+      </form>{% endif %}
+    </td>
+  </tr>{% empty %}<tr><td colspan="8" class="empty">{% if mode == 'mine' %}You have not made any correction requests.{% else %}Nothing to review.{% endif %}</td></tr>{% endfor %}
+</table></div></section>
+{% endblock %}

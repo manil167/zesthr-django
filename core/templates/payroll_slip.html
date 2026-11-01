@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Payroll</p>
+        <h1>Salary Slip</h1>
+    </div>
+
+    <button type="button" onclick="window.print()" class="btn btn-primary">
+        Print
+    </button>
+</div>
+
+<section class="card payslip">
+    <header class="payslip-header">
+        <div>
+            <h2>HROS</h2>
+            <p>Human Resources Operating System</p>
+        </div>
+
+        <div class="text-right">
+            <strong>
+                {{ salary.month }}/{{ salary.year }}
+            </strong>
+        </div>
+    </header>
+
+    <div class="employee-summary">
+        <div>
+            <span>Employee</span>
+            <strong>{{ salary.emp.name }}</strong>
+        </div>
+
+        <div>
+            <span>Employee ID</span>
+            <strong>{{ salary.emp.employee_number }}</strong>
+        </div>
+
+        <div>
+            <span>Department</span>
+            <strong>{{ salary.emp.department|default:"—" }}</strong>
+        </div>
+
+        <div>
+            <span>Designation</span>
+            <strong>{{ salary.emp.designation }}</strong>
+        </div>
+    </div>
+
+    <div class="pay-grid">
+        <section>
+            <h3>Earnings</h3>
+
+            <div class="pay-row">
+                <span>Basic Salary</span>
+                <strong>{{ salary.emp.basic_salary }}</strong>
+            </div>
+
+            <div class="pay-row">
+                <span>Overtime</span>
+                <strong>{{ salary.overtime_pay }}</strong>
+            </div>
+
+            <div class="pay-row total">
+                <span>Gross Pay</span>
+                <strong>{{ salary.gross }}</strong>
+            </div>
+        </section>
+
+        <section>
+            <h3>Deductions</h3>
+
+            <div class="pay-row">
+                <span>Absence Deduction</span>
+                <strong>{{ salary.deduction }}</strong>
+            </div>
+
+            <div class="pay-row total">
+                <span>Total Deduction</span>
+                <strong>{{ salary.deduction }}</strong>
+            </div>
+        </section>
+    </div>
+
+    <section class="attendance-summary">
+        <h3>Attendance</h3>
+
+        <div class="summary-grid">
+            <div>
+                <span>Present</span>
+                <strong>{{ attendance.present|default:0 }}</strong>
+            </div>
+
+            <div>
+                <span>Half Day</span>
+                <strong>{{ attendance.half|default:0 }}</strong>
+            </div>
+
+            <div>
+                <span>Absent</span>
+                <strong>{{ attendance.absent|default:0 }}</strong>
+            </div>
+
+            <div>
+                <span>Leave</span>
+                <strong>{{ attendance.leave|default:0 }}</strong>
+            </div>
+        </div>
+    </section>
+
+    <footer class="net-pay">
+        <span>Net Pay</span>
+        <strong>{{ salary.net }}</strong>
+    </footer>
+</section>
+{% endblock %}

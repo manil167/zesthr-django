@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Attendance change history{% endblock %}
+{% block content %}
+<div class="head"><h1>Attendance change history</h1>
+  <div class="row-actions"><a class="btn ghost sm" href="{% url 'attendance_list' %}">Attendance log</a></div></div>
+<p class="muted">Every punch, correction, manual entry and deletion, newest first. Entries are permanent: they cannot be edited or removed by anyone, in the application or in the database.</p>
+<form method="get" class="filters">
+  <label>Employee <select name="emp"><option value="">Everyone</option>{% for e in employees %}<option value="{{ e.pk }}" {% if emp == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>{% endfor %}</select></label>
+  <label>Attendance day from <input type="date" name="from" value="{{ d_from }}"></label>
+  <label>to <input type="date" name="to" value="{{ d_to }}"></label>
+  <label>Changed from <input type="date" name="changed_from" value="{{ c_from }}"></label>
+  <label>to <input type="date" name="changed_to" value="{{ c_to }}"></label>
+  <label>Type <select name="action"><option value="">Any</option>{% for code, label in actions %}<option value="{{ code }}" {% if action == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <label>Changed by <input name="by" value="{{ by }}" placeholder="username"></label>
+  <input type="search" name="q" value="{{ q }}" placeholder="Search the reason" aria-label="Search the reason">
+  <button class="btn ghost sm">Apply</button>{% if emp or d_from or d_to or c_from or c_to or action or by or q %}<a class="btn ghost sm" href="{% url 'attendance_history' %}">Clear</a>{% endif %}
+</form>
+<section class="card"><div class="scroll"><table>
+  <tr><th>When</th><th>Employee</th><th>Day</th><th>What happened</th><th>Change</th><th>Reason</th><th>By</th></tr>
+  {% for a in page %}<tr>
+    <td>{{ a.created_at|date:"j M Y, H:i" }}</td>
+    <td>{{ a.emp.name }}</td>
+    <td><b>{{ a.date|date:"D, j M Y" }}</b></td>
+    <td><span class="tag {% if a.action == 'MANUAL_DELETE' %}A{% elif a.action == 'MANUAL_EDIT' %}H{% else %}P{% endif %}">{{ a.get_action_display }}</span></td>
+    <td>{% for label, old, new in a.changes %}<div><span class="muted">{{ label }}:</span> {{ old }} &rarr; <b>{{ new }}</b></div>{% empty %}<span class="muted">no visible change</span>{% endfor %}</td>
+    <td>{{ a.reason|default:"—" }}{% if a.correction_request %}<div class="muted">Correction request #{{ a.correction_request_id }}</div>{% endif %}</td>
+    <td>{% if a.changed_by %}{{ a.changed_by.username }}{% if a.by_self %} <span class="muted">(the employee)</span>{% endif %}{% else %}<span class="muted">system</span>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="7" class="empty">No history matches these filters.</td></tr>{% endfor %}
+</table></div>
+{% if page.paginator.num_pages > 1 %}<nav class="pager" aria-label="Pages"><span>{{ total }} entr{{ total|pluralize:"y,ies" }} · page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_previous %}<a href="?{% querystring page=page.previous_page_number %}">‹ Previous</a>{% endif %}{% if page.has_next %}<a href="?{% querystring page=page.next_page_number %}">Next ›</a>{% endif %}</nav>
+{% else %}<p class="pager"><span>{{ total }} entr{{ total|pluralize:"y,ies" }}</span></p>{% endif %}
+</section>
+{% endblock %}

@@ -10,7 +10,7 @@
     </p>
   </div>
   <div class="actions">
-    {% if user.is_staff or user.is_superuser %}
+    {% if user.is_staff and perms.core.change_holiday %}
       <a class="btn ghost" href="/admin/core/holiday/">+ Manage in Admin</a>
     {% endif %}
     <a class="btn" href="{% url 'leave_apply' %}">Apply for Leave</a>

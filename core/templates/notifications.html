@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="head"><h1>Notifications</h1><form method="post" action="{% url 'notifications_read_all' %}">{% csrf_token %}<button class="btn ghost">Mark all as read</button></form></div>
+<p>{% if perms.core.send_announcement %}<a class="btn" href="{% url 'announcement_create' %}">Send announcement</a>{% endif %} {% if perms.core.link_employee_account %}<a class="btn ghost" href="{% url 'organization_invite' %}">Invite member</a>{% endif %}</p>
+<p><a href="?unread=1">Unread only</a> | <a href="{% url 'notifications' %}">All notifications</a></p>
+<section class="card"><ul>{% for item in items %}<li><h2>{{ item.title }} {% if not item.read %}<small>Unread</small>{% endif %}</h2><p>{{ item.message }}</p><small>{{ item.created_at }}</small>
+{% if item.safe_url %}<p><a href="{{ item.safe_url }}">Open related page</a></p>{% endif %}{% if not item.read %}<form method="post" action="{% url 'notification_read' item.pk %}">{% csrf_token %}<button class="btn ghost sm">Mark read</button></form>{% endif %}</li>{% empty %}<li>No notifications to show.</li>{% endfor %}</ul>
+<nav aria-label="Pagination">{% if items.has_previous %}<a href="?unread={{ unread|yesno:'1,0' }}&page={{ items.previous_page_number }}">Previous</a>{% endif %} Page {{ items.number }} of {{ items.paginator.num_pages }} {% if items.has_next %}<a href="?unread={{ unread|yesno:'1,0' }}&page={{ items.next_page_number }}">Next</a>{% endif %}</nav></section>
+{% endblock %}

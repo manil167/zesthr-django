@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Leave balances{% endblock %}
+{% block content %}
+<div class="head"><h1>{{ employee.name }}: leave balances for {{ year }}</h1></div>
+<section class="card"><div class="scroll"><table>
+<thead><tr><th>Leave type</th><th>Earned</th><th>Carryover</th><th>Adjustments</th><th>Approved</th><th>Pending</th><th>Remaining</th></tr></thead>
+<tbody>{% for row in balances %}<tr><td>{{ row.entitlement.get_leave_type_display }}</td><td>{{ row.earned }}</td><td>{{ row.carryover }}</td><td>{{ row.adjustments }}</td><td>{{ row.approved }}</td><td>{{ row.pending }}</td><td>{{ row.remaining }}</td></tr>
+{% empty %}<tr><td colspan="7">No annual entitlement has been configured. Contact HR for your applicable policy.</td></tr>{% endfor %}</tbody></table></div>
+<p>Pending requests reserve available days. Monthly accrual is credited at the start of each month. Carryover and adjustments are set by HR.</p></section>
+{% endblock %}
