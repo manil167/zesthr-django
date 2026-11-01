@@ -94,6 +94,7 @@
     {% elif user.is_staff %}
     <a href="/admin/">Admin panel</a>
     {% endif %}
+    {% if user.is_active and user.is_staff %}<a href="{% url 'admin_guide' %}">Administrative panel guide</a>{% endif %}
   </nav>
 </aside>
 <div class="main">

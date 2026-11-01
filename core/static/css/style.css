@@ -160,14 +160,15 @@ label{display:block;font-weight:500;margin-bottom:.9rem;font-size:.92rem}label s
 .mock-val{font-size:1.75rem;font-weight:800;margin:.25rem 0;color:var(--ink)}
 .mock-sub{font-size:.76rem;color:var(--mut)}
 
-.mockup-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem}
-.mock-panel{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:1.35rem}
+.mockup-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:1.5rem;min-width:0}
+.mock-panel{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:1.35rem;min-width:0;max-width:100%}
 .mock-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
 .mock-panel-head h3{font-size:1.02rem;margin:0;font-weight:700}
 .mock-tag{font-size:.8rem;padding:.2rem .65rem;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--mut);font-weight:500}
 .mock-badge-tech{font-size:.75rem;font-weight:700;color:var(--teal-d);background:rgba(13,148,136,.12);padding:.25rem .65rem;border-radius:99px}
 [data-theme=dark] .mock-badge-tech{color:#2dd4bf}
-.mock-table-wrap{overflow-x:auto}
+.mock-table-wrap{overflow-x:auto;max-width:100%;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.mock-table-wrap:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
 .mock-table{width:100%;font-size:.88rem;border-collapse:collapse}
 .mock-table th{font-size:.78rem;padding:.55rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line);color:var(--mut)}
 .mock-table td{padding:.65rem .55rem;border-bottom:1px solid var(--line)}
@@ -266,7 +267,7 @@ label{display:block;font-weight:500;margin-bottom:.9rem;font-size:.92rem}label s
 @media(max-width:990px){
   .bento-grid{grid-template-columns:1fr}
   .bento-wide{grid-column:span 1}
-  .mockup-grid{grid-template-columns:1fr}
+  .mockup-grid{grid-template-columns:minmax(0,1fr)}
   .calc-card{grid-template-columns:1fr}
   .calc-math-grid{grid-template-columns:1fr}
   .demo-card{grid-template-columns:1fr}
@@ -275,6 +276,21 @@ label{display:block;font-weight:500;margin-bottom:.9rem;font-size:.92rem}label s
   .home-nav-links{display:none}
   .home-hero{padding:3.5rem 1rem 2.5rem}
   .browser-address-bar{display:none}
+}
+@media(max-width:600px){
+  .home-nav-inner{padding:12px;gap:10px;flex-wrap:wrap}
+  .home-nav-actions{flex-wrap:wrap;gap:8px;min-width:0;max-width:100%}
+  .home-preview-section{padding-left:0;padding-right:0}
+  .home-preview-section .home-container{padding-left:12px;padding-right:12px}
+  .browser-content{padding:12px;min-width:0}
+  .mockup-kpis{grid-template-columns:minmax(0,1fr)}
+  .mock-panel{padding:14px}
+  .mock-panel-head,.mock-footer-bar{align-items:flex-start;flex-direction:column;gap:10px}
+  .mock-panel-head h3{overflow-wrap:anywhere}
+  .mock-table{min-width:480px}
+  .formula-breakdown-card{padding:12px;min-width:0}
+  .formula-row{flex-direction:column;align-items:flex-start;gap:4px}
+  .f-val{max-width:100%;overflow-wrap:anywhere}
 }
 
 /* ==========================================================

@@ -1,0 +1,3 @@
+{% extends "admin/base.html" %}
+{% block branding %}<div id="site-name"><a href="{% url 'admin:index' %}">HROS administration</a></div>{% endblock %}
+{% block nav-global %}{% if user.is_active and user.is_staff %}<nav aria-label="Administration help"><a href="{% url 'admin_guide' %}">Administrative panel guide</a></nav>{% endif %}{% endblock %}
