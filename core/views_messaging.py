@@ -82,10 +82,10 @@ def whatsapp_link(request):
 def assistant(request):
     if request.method == "GET":
         return JsonResponse({"messages": assistant_chat.history(request.session, request.user),
-                             "mode": assistant_chat.mode(request.user)})
+                             **assistant_chat.availability(request.user)})
     if request.method == "DELETE":
         assistant_chat.clear(request.session)
-        return JsonResponse({"messages": [], "mode": assistant_chat.mode(request.user)})
+        return JsonResponse({"messages": [], **assistant_chat.availability(request.user)})
     if len(request.body) > 8192:
         return JsonResponse({"error": "Message is too long."}, status=400)
     try:

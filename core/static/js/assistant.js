@@ -10,7 +10,10 @@
   const badge = root.querySelector('[data-chat-mode]');
   const clear = root.querySelector('[data-chat-clear]');
   let ready = false, busy = false;
-  const mode = value => { badge.textContent = value === 'ai' ? 'AI support · OpenAI' : 'App guidance · AI not enabled'; };
+  const mode = (value, reason) => {
+    const labels = {disabled:'AI disabled by administrator', missing_key:'AI key not configured', membership_required:'Organization membership required for AI'};
+    badge.textContent = value === 'ai' ? 'AI support · OpenAI' : 'App guidance · ' + (labels[reason] || 'AI unavailable');
+  };
   const bubble = (role, text, url) => {
     const message = document.createElement('article');
     message.className = 'hros-chat-message ' + (role === 'user' ? 'from-user' : 'from-assistant');
@@ -60,7 +63,7 @@
     if (ready) return;
     setBusy(true); let failure = '';
     try {
-      const data = await request('GET'); mode(data.mode); log.replaceChildren();
+      const data = await request('GET'); mode(data.mode, data.reason); log.replaceChildren();
       if (data.messages?.length) data.messages.forEach(message => bubble(message.role, message.content)); else welcome();
       ready = true;
     } catch (error) { failure = error.message; }
@@ -81,13 +84,13 @@
     event.preventDefault(); const question = input.value.trim(); if (busy || !question) return;
     bubble('user',question); input.value = ''; setBusy(true);
     let failure = '';
-    try { const data = await request('POST',{question}); mode(data.mode); bubble('assistant',data.answer,data.url); ready = true; }
+    try { const data = await request('POST',{question}); mode(data.mode, data.reason); bubble('assistant',data.answer,data.url); ready = true; }
     catch (error) { failure = error.name === 'AbortError' ? 'The response took too long. Please try again.' : error.message; bubble('assistant',failure); }
     finally { setBusy(false); status.textContent = failure; input.focus(); }
   });
   clear.addEventListener('click', async () => {
     if (busy) return; setBusy(true); let failure = '';
-    try { const data = await request('DELETE'); mode(data.mode); log.replaceChildren(); welcome(); ready = true; }
+    try { const data = await request('DELETE'); mode(data.mode, data.reason); log.replaceChildren(); welcome(); ready = true; }
     catch (error) { failure = error.message; }
     finally { setBusy(false); status.textContent = failure; input.focus(); }
   });

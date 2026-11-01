@@ -32,6 +32,17 @@ class AssistantChatTests(TestCase):
     def ask(self, question="How do I request leave?", **extra):
         return self.client.post(self.url, json.dumps({"question": question, **extra}), content_type="application/json")
 
+    def test_availability_explains_configuration_and_access(self):
+        with override_settings(ASSISTANT_ENABLED=False):
+            self.assertEqual(self.client.get(self.url).json()['reason'], 'disabled')
+        with override_settings(OPENAI_API_KEY=''):
+            self.assertEqual(self.client.get(self.url).json()['reason'], 'missing_key')
+        self.assertEqual(self.client.get(self.url).json()['mode'], 'ai')
+        OrganizationMembership.objects.filter(user=self.alice).update(is_active=False)
+        self.assertEqual(self.client.get(self.url).json()['reason'], 'membership_required')
+        self.alice.is_superuser = True
+        self.assertEqual(assistant_chat.availability(self.alice)['mode'], 'ai')
+
     @patch("core.services.assistant_chat.OpenAIProvider.complete", return_value="Open Leaves and select Apply leave.")
     def test_followup_uses_only_server_history_and_can_clear(self, complete):
         self.assertEqual(self.ask().status_code, 200)
@@ -166,4 +177,3 @@ class AssistantQuotaConcurrencyTests(TransactionTestCase):
             results = list(pool.map(lambda _: consume(), range(2)))
         self.assertCountEqual(results, ['allowed', 'limited'])
         self.assertEqual(AssistantQuota.objects.get(user=user).day_count, 1)
-

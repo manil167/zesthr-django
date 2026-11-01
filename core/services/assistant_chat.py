@@ -20,10 +20,17 @@ class AssistantRateLimit(Exception):
         self.retry_after = retry_after
 
 
-def mode(user):
-    configured = settings.ASSISTANT_ENABLED and settings.OPENAI_API_KEY
+def availability(user):
+    if not settings.ASSISTANT_ENABLED:
+        return {'mode': 'guide', 'reason': 'disabled'}
+    if not settings.OPENAI_API_KEY:
+        return {'mode': 'guide', 'reason': 'missing_key'}
     authorized = user.is_active and (user.is_superuser or bool(organization_ids_for(user)))
-    return "ai" if configured and authorized else "guide"
+    return {'mode': 'ai', 'reason': ''} if authorized else {'mode': 'guide', 'reason': 'membership_required'}
+
+
+def mode(user):
+    return availability(user)['mode']
 
 
 def history(session, user):
@@ -76,4 +83,4 @@ def reply(user, session, question, *, provider=None):
     session[SESSION_KEY] = (previous + [{"role": "user", "content": question},
                                      {"role": "assistant", "content": result["answer"]}])[-MAX_MESSAGES:]
     session["hros_assistant_owner"] = str(user.pk)
-    return result
+    return {**result, **availability(user)}
