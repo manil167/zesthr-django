@@ -15,3 +15,7 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 # Test login pages never contact configured external identity providers.
 GOOGLE_OAUTH_CLIENT_ID = ""
 GOOGLE_OAUTH_CLIENT_SECRET = ""
+
+# Never contact a paid provider during the ordinary test suite.
+ASSISTANT_ENABLED = False
+OPENAI_API_KEY = ""

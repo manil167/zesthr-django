@@ -1,0 +1,15 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/assistant.css' %}">
+<section class="hros-chat" data-assistant data-endpoint="{% url 'app_assistant' %}">
+  <button class="hros-chat-launch" type="button" aria-expanded="false" aria-controls="hros-chat-panel"><span aria-hidden="true">✦</span> HROS Assistant</button>
+  <section id="hros-chat-panel" class="hros-chat-panel" role="region" aria-label="HROS Assistant" hidden>
+    <header class="hros-chat-head"><div><strong>HROS Assistant</strong><small data-chat-mode>Connecting…</small></div><button type="button" data-chat-close aria-label="Close assistant">×</button></header>
+    <p class="hros-chat-privacy">Messages may be sent to OpenAI. Keep confidential employee details out of chat. The assistant cannot access or change HR records.</p>
+    <div class="hros-chat-messages" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions text" tabindex="0"></div>
+    <div class="hros-chat-suggestions" aria-label="Suggested questions"><button type="button">How do I correct a missed punch?</button><button type="button">Explain the leave approval process</button><button type="button">Where can I find my payslip?</button></div>
+    <p class="hros-chat-status" role="status" data-chat-status></p>
+    <form class="hros-chat-compose" data-chat-form>{% csrf_token %}<label class="hros-chat-label" for="hros-chat-input">Message HROS Assistant</label><textarea id="hros-chat-input" rows="2" maxlength="2000" placeholder="Ask about attendance, leave or HROS…" required></textarea><div><span>Enter to send · Shift + Enter for a new line</span><button type="submit" class="btn">Send</button></div></form>
+    <footer class="hros-chat-footer"><button type="button" data-chat-clear>New conversation</button><span>AI answers can be mistaken. Confirm policy with HR.</span></footer>
+  </section>
+</section>
+<script src="{% static 'js/assistant.js' %}" defer></script>

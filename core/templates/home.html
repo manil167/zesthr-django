@@ -529,5 +529,6 @@
   updateCalc();
 </script>
 
+{% if user.is_authenticated %}{% include "assistant_widget.html" %}{% endif %}
 </body>
 </html>

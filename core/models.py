@@ -1261,3 +1261,5 @@ from .models_anomalies import AttendanceAnomaly, AnomalyDecision  # noqa: E402,F
 
 from .models_messaging import (Announcement, OrganizationInvitation, WhatsAppLink, WhatsAppReceipt, WhatsAppOutbox)  # noqa: E402,F401
 from .models_messaging import NeonIdentity  # noqa: E402,F401
+
+from .models_assistant import AssistantQuota  # noqa: E402,F401

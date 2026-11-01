@@ -143,31 +143,7 @@ $('theme') && ($('theme').onclick = () => {
 if ($('clock')) { const tick = () => $('clock').textContent = new Date().toLocaleString([], {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}); tick(); setInterval(tick, 30000); }
 </script>
 {% if user.is_authenticated %}
-<details id="app-guide" style="position:fixed;bottom:16px;right:16px;z-index:90;max-width:calc(100vw - 32px);width:340px;background:var(--card, Canvas);color:var(--text, CanvasText);border:1px solid;border-radius:12px;padding:12px;box-shadow:0 4px 18px #0002">
-<summary style="cursor:pointer;font-weight:600">Ask the app guide</summary>
-<p>Help with attendance, leave, payslips and notifications.</p>
-<form id="app-guide-form" method="post" action="{% url 'app_assistant' %}">{% csrf_token %}<label for="guide-question">How can I help?</label><input id="guide-question" name="question" maxlength="1000" required style="width:100%"><button class="btn" type="submit">Ask</button></form>
-<p id="guide-answer" role="status" aria-live="polite"></p><a id="guide-link" hidden>Open page</a>
-</details>
-<script>
-(() => {
-const form = document.getElementById('app-guide-form');
-form.addEventListener('submit', async event => {
-  event.preventDefault();
-  const output = document.getElementById('guide-answer');
-  const link = document.getElementById('guide-link');
-  const button = form.querySelector('button');
-  button.disabled = true; link.hidden = true; output.textContent = 'Finding guidance…';
-  try {
-    const response = await fetch(form.action, {method:'POST', headers:{'Content-Type':'application/json', 'X-CSRFToken':form.elements.csrfmiddlewaretoken.value}, body:JSON.stringify({question:form.elements.question.value})});
-    const data = await response.json();
-    output.textContent = data.answer || data.error || 'Please sign in and try again.';
-    if (data.url && data.url.startsWith('/') && !data.url.startsWith('//')) { link.href = data.url; link.hidden = false; }
-  } catch (error) { output.textContent = 'Help is temporarily unavailable. Please try again.'; }
-  finally { button.disabled = false; }
-});
-})();
-</script>
+{% include "assistant_widget.html" %}
 {% endif %}
 </body>
 </html>

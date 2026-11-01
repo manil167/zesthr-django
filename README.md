@@ -113,3 +113,7 @@ spam folders and production SMTP configuration if messages do not arrive.
 Provider/network/configuration failures now display a recovery-unavailable message
 instead of pretending delivery succeeded. Logs contain only the endpoint, HTTP
 status and a bounded error classification, never response bodies or reset tokens.
+
+## Conversational assistant
+
+Signed-in users can open HROS Assistant for conversational app guidance, follow-up questions, and session-scoped history. OpenAI credentials remain server-side; employee records are not queried or sent. See [assistant configuration, privacy boundaries, and limits](docs/ASSISTANT.md). Production AI requires a key in the hosting secret manager; without one the widget explicitly labels its deterministic guidance mode.

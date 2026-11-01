@@ -1,5 +1,7 @@
 """Deterministic app guidance: no employee data or external AI requests."""
 TOPICS = [
+    (('correction', 'correct a', 'missed punch', 'missing punch'),
+     'Open My corrections, choose New correction, select the date and explain what needs correcting. Track the request and review outcome there. The authorized reviewer applies approved changes with an audit record.', '/attendance/corrections/mine/'),
     (('punch', 'clock', 'attendance', 'check in', 'check out'),
      'Open Punch Attendance to check in or check out. Your local shift time is recorded. For a missed punch, open My corrections, choose the date and explain the correction. HR punches still use the same attendance rules.', '/attendance/today/'),
     (('leave', 'holiday', 'vacation'),
