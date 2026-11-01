@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .tenancy import scope_model_queryset
+from core.account_labels import label_user_choices
 
 
 class TenantAdmin(admin.ModelAdmin):
@@ -8,7 +9,11 @@ class TenantAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         kwargs["queryset"] = scope_model_queryset(db_field.remote_field.model.objects.all(), request.user)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+        return label_user_choices(super().formfield_for_foreignkey(db_field, request, **kwargs))
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        kwargs['queryset'] = scope_model_queryset(db_field.remote_field.model.objects.all(), request.user)
+        return label_user_choices(super().formfield_for_manytomany(db_field, request, **kwargs))
 
 
 

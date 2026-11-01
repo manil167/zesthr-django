@@ -42,9 +42,10 @@ def attendance_report(
 def employee_summary(
     start_date,
     end_date,
+    *, user,
 ):
     return (
-        Employee.objects
+        scope_queryset(Employee.objects.all(), user)
         .filter(is_active=True)
         .annotate(
             present=Count(

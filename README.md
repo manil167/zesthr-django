@@ -117,3 +117,7 @@ status and a bounded error classification, never response bodies or reset tokens
 ## Conversational assistant
 
 Signed-in users can open HROS Assistant for conversational app guidance, follow-up questions, and session-scoped history. OpenAI credentials remain server-side; employee records are not queried or sent. See [assistant configuration, privacy boundaries, and limits](docs/ASSISTANT.md). Production AI requires a key in the hosting secret manager; without one the widget explicitly labels its deterministic guidance mode.
+
+## Administrative handbook and project review
+
+Authorized active staff can open `/admin/guide/` from the admin header or the main application navigation. The handbook explains setup, permissions, workflows and field examples; its model reference follows the reader’s admin permissions. See the [project and tenancy review](docs/PROJECT_REVIEW_2026-11-01.md) for corrections, verification scope and recommendations, including the current user-wide role model.

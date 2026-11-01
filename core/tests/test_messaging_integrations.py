@@ -316,6 +316,7 @@ class NeonAuthTests(TestCase):
         logout.assert_called_once_with(request)
         self.assertEqual(response.status_code, 302)
 
+    @patch.dict('os.environ', {}, clear=True)
     def test_neon_database_pooling_requires_encrypted_connections(self):
         from payroll_project.settings.env import postgres_database
         from django.core.exceptions import ImproperlyConfigured

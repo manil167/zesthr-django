@@ -7,6 +7,7 @@ from django.db.models import Q
 
 from .models import Attendance, Employee, LeaveApplication
 from .services.leave import validate_leave_request
+from .account_labels import label_user_choices
 
 D = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
 T = forms.TimeInput(attrs={"type": "time"}, format="%H:%M")
@@ -49,6 +50,7 @@ class EmployeeForm(forms.ModelForm):
                 .filter(Q(employee_profile__isnull=True) | Q(pk=current)).order_by("username")
             )
             self.fields["user"].required = False
+            label_user_choices(self.fields["user"])
 
         # Separation (resigned, terminated...) goes through the Deactivate action so the
         # login is revoked too; this form only toggles probation <-> active.
@@ -136,8 +138,7 @@ class AttendanceForm(forms.ModelForm):
         model = Attendance
         fields = ["emp", "date", "status", "check_in", "check_out", "ends_next_day"]
         widgets = {"date": D, "check_in": T, "check_out": T}
-        labels = {"ends_next_day": "Check-out is on the next day (overnight shift)"}
-        labels = {"emp": "Employee"}
+        labels = {"ends_next_day": "Check-out is on the next day (overnight shift)", "emp": "Employee"}
 
 
 class LeaveApplicationForm(forms.ModelForm):

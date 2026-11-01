@@ -17,8 +17,18 @@ from . import accounts, history
 DEACTIVATION_STATUSES = ("SUSPENDED", "INACTIVE", "RESIGNED", "TERMINATED", "RETIRED")
 
 
+def _authorize_lifecycle(employee, by):
+    if by is None:  # trusted management callers have no HTTP actor
+        return
+    from core import roles
+    if not by.has_perm(roles.DEACTIVATE_EMPLOYEE) or not scope_queryset(
+            Employee.objects.filter(pk=employee.pk), by).exists():
+        raise PermissionDenied
+
+
 @transaction.atomic
 def deactivate_employee(employee, *, status, separation_date=None, reason="", by=None):
+    _authorize_lifecycle(employee, by)
     if status not in DEACTIVATION_STATUSES:
         raise ValidationError("Choose a valid deactivation status.")
     if status in Employee.SEPARATED_STATUSES and not separation_date:
@@ -37,6 +47,7 @@ def deactivate_employee(employee, *, status, separation_date=None, reason="", by
 
 @transaction.atomic
 def reactivate_employee(employee, *, status="ACTIVE", by=None):
+    _authorize_lifecycle(employee, by)
     if status not in Employee.ACTIVE_STATUSES:
         raise ValidationError("Reactivate as Active or On probation.")
     before = history.refresh_and_snapshot(employee.pk)

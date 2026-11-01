@@ -36,11 +36,11 @@ def employees_managed_by(user):
     profile = get_employee_profile(user)
     if profile is None:
         return Employee.objects.none()
-    return Employee.objects.filter(manager=profile, is_active=True)
+    return scope_queryset(Employee.objects.filter(manager=profile, is_active=True), user)
 
 
-def pending_leave_count():
-    return LeaveApplication.objects.filter(status="PENDING").count()
+def pending_leave_count(*, user):
+    return scope_queryset(LeaveApplication.objects.filter(status="PENDING"), user, "emp__organization").count()
 
 
 def net_payroll_total(month, year, *, user=None):
@@ -174,7 +174,7 @@ def employee_snapshot(emp, today):
 
 def attendance_register(today, *, user=None):
     """(employee, today's record or None) for every active employee."""
-    records = {a.emp_id: a for a in Attendance.objects.filter(date=today)}
+    records = {a.emp_id: a for a in _scope(Attendance.objects.filter(date=today), user, "emp__organization")}
     return [(e, records.get(e.id)) for e in _scope(Employee.objects.filter(is_active=True), user)]
 
 

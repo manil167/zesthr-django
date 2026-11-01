@@ -51,7 +51,7 @@
       <dt>Confirmation</dt><dd>{{ emp.confirmation_date|default:"—" }}</dd>
       {% if emp.separation_date %}<dt>Separation date</dt><dd>{{ emp.separation_date }}</dd>{% endif %}
       {% if emp.separation_reason %}<dt>Reason</dt><dd>{{ emp.separation_reason }}</dd>{% endif %}
-      <dt>Login account</dt><dd>{% if emp.user %}{{ emp.user|first_name_label }}{% if not emp.user.is_active %} <span class="tag A">disabled</span>{% endif %}{% else %}not linked{% endif %}</dd>
+      <dt>Login account</dt><dd>{% if emp.user %}{{ emp.user|account_label }}{% if not emp.user.is_active %} <span class="tag A">disabled</span>{% endif %}{% else %}not linked{% endif %}</dd>
     </dl>
   </section>
   {% endif %}
@@ -84,7 +84,7 @@
   <h2>Employment history</h2>
   <div class="scroll"><table>
     <tr><th>When</th><th>Change</th><th>From</th><th>To</th><th>By</th></tr>
-    {% for h in history %}<tr><td>{{ h.changed_at|date:"Y-m-d H:i" }}</td><td>{% if h.field == 'created' %}Record created{% else %}{{ h.field|title }}{% endif %}</td><td>{{ h.old_value|default:"—" }}</td><td>{{ h.new_value|default:"—" }}</td><td>{{ h.changed_by.username|default:"system" }}</td></tr>
+    {% for h in history %}<tr><td>{{ h.changed_at|date:"Y-m-d H:i" }}</td><td>{% if h.field == 'created' %}Record created{% else %}{{ h.field|title }}{% endif %}</td><td>{{ h.old_value|default:"—" }}</td><td>{{ h.new_value|default:"—" }}</td><td>{{ h.changed_by|account_label|default:"system" }}</td></tr>
     {% empty %}<tr><td colspan="5" class="empty">No changes recorded yet.</td></tr>{% endfor %}
   </table></div>
 </section>

@@ -46,7 +46,13 @@ class Department(models.Model):
     def save(self, *args, **kwargs):
         if not self.organization_id:
             self.organization = default_organization()
+        self.clean()
         super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.work_schedule_id and self.organization_id != self.work_schedule.organization_id:
+            raise ValidationError({'work_schedule': 'Select a schedule in the department organization.'})
 
 
 class JobPosition(models.Model):
@@ -66,6 +72,15 @@ class JobPosition(models.Model):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+        if self.department_id and self.organization_id != self.department.organization_id:
+            raise ValidationError({'department': 'Select a department in the position organization.'})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
 
 
 class EmploymentType(models.Model):
@@ -301,10 +316,12 @@ class Employee(models.Model):
                 errors["manager"] = "An employee cannot be their own manager."
             elif self.pk:
                 boss = self.manager
-                while boss is not None:  # walk up the chain looking for a cycle
-                    if boss.pk == self.pk:
+                visited = set()
+                while boss is not None:  # also stop if imported data already contains a cycle
+                    if boss.pk == self.pk or boss.pk in visited:
                         errors["manager"] = "This would create a reporting loop."
                         break
+                    visited.add(boss.pk)
                     boss = boss.manager
         if self.employment_status in self.SEPARATED_STATUSES and not self.separation_date:
             errors["separation_date"] = "A separation date is required for this status."

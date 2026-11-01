@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load account_names %}
 {% block title %}{% if mode == 'mine' %}My correction requests{% else %}Correction requests{% endif %}{% endblock %}
 {% block content %}
 <div class="head"><h1>{% if mode == 'mine' %}My correction requests{% else %}Correction requests to review{% endif %}</h1>
@@ -15,7 +16,7 @@
     <td class="muted">{% if c.original_values %}{{ c.original_values.status }} {{ c.original_values.check_in|default:"--" }}{% if c.original_values.check_in %} - {{ c.original_values.check_out|default:"--" }}{% endif %}{% else %}no record{% endif %}</td>
     <td>{{ c.requested_summary }}</td>
     <td class="clip" title="{{ c.reason }}">{{ c.reason }}</td>
-    <td><span class="tag {{ c.status }}">{{ c.get_status_display }}</span>{% if c.decision_note %}<div class="muted">{{ c.decision_note }}</div>{% endif %}{% if c.decided_by %}<div class="muted">by {{ c.decided_by.username }}</div>{% endif %}</td>
+    <td><span class="tag {{ c.status }}">{{ c.get_status_display }}</span>{% if c.decision_note %}<div class="muted">{{ c.decision_note }}</div>{% endif %}{% if c.decided_by %}<div class="muted">by {{ c.decided_by|account_label }}</div>{% endif %}</td>
     <td class="row-actions">
       {% if mode == 'mine' and c.status == 'PENDING' %}<form method="post" action="{% url 'correction_cancel' c.pk %}" style="display:inline">{% csrf_token %}<button class="linklike">Cancel</button></form>{% endif %}
       {% if mode == 'review' and c.status == 'PENDING' %}

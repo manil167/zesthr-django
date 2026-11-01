@@ -21,8 +21,9 @@ Corrections of any other kind go through the edit form, which requires a reason.
 from dataclasses import dataclass
 from datetime import timedelta
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
+from apps.organizations.tenancy import scope_queryset
 
 from .. import timeutil
 from ..models import Attendance, AttendanceAudit, Employee
@@ -37,6 +38,11 @@ class AttendanceError(Exception):
     def __init__(self, code, message):
         super().__init__(message)
         self.code = code
+
+
+def _authorize_tenant(emp, by):
+    if by is not None and not scope_queryset(Employee.objects.filter(pk=emp.pk), by).exists():
+        raise PermissionDenied
 
 
 def snapshot(rec):
@@ -64,6 +70,7 @@ def _require_active(emp):
 
 @transaction.atomic
 def check_in(emp, *, now=None, today=None, by=None):
+    _authorize_tenant(emp, by)
     _require_active(emp)
     day, moment = today or timeutil.today_for(emp), now or timeutil.time_for(emp)
     rec, created = Attendance.objects.select_for_update().get_or_create(
@@ -102,6 +109,7 @@ def current_record(emp, today):
 
 @transaction.atomic
 def check_out(emp, *, now=None, today=None, by=None):
+    _authorize_tenant(emp, by)
     _require_active(emp)
     day, moment = today or timeutil.today_for(emp), now or timeutil.time_for(emp)
     rec = Attendance.objects.select_for_update().filter(emp=emp, date=day).first()
@@ -142,6 +150,7 @@ def check_out(emp, *, now=None, today=None, by=None):
 
 @transaction.atomic
 def mark_status(emp, status, *, today=None, by=None, reason=""):
+    _authorize_tenant(emp, by)
     """HR sets today's status to Absent / Half day / Leave."""
     if status not in MARKABLE_STATUSES:
         raise ValueError(f"Unsupported attendance status: {status!r}")
@@ -203,6 +212,7 @@ def save_manual(emp, day, *, status, check_in=None, check_out=None, ends_next_da
     Returns (record, outcome) with outcome 'created', 'updated' or 'unchanged'. A reason is mandatory.
     The row is locked while it changes and every real change is written to the audit history.
     """
+    _authorize_tenant(emp, by)
     if not (reason or "").strip():
         raise AttendanceError("reason_required", "A reason is required for manual attendance changes.")
     Employee.objects.select_for_update().get(pk=emp.pk)

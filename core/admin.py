@@ -146,6 +146,9 @@ class HROSUserAdmin(UserAdmin):
     """Users created here are 'provisioned': they must choose their own password at first sign-in."""
 
     actions = ["require_password_change", "deactivate_accounts", "activate_accounts"]
+    list_display = ("first_name", "last_name", "email", "is_active", "is_staff")
+    ordering = ("first_name", "last_name", "email")
+    search_fields = ("first_name", "last_name", "email", "username")
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -336,3 +339,7 @@ class PlatformGroupAdmin(GroupAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+
+from .admin_identity import register_platform_identity_admins  # noqa: E402
+register_platform_identity_admins()

@@ -57,8 +57,9 @@ def _row(item, source, actor, user):
         reason = item.reason if user.has_perm(roles.VIEW_EMPLOYEE_PERSONAL) else "Activity recorded"
     else:
         subject, reason = f"Exception {item.anomaly_id}", item.note
+    from core.account_labels import user_choice_label
     person = getattr(item, actor)
-    return [item.created_at.isoformat(), person.username if person else "System or historical account",
+    return [item.created_at.isoformat(), user_choice_label(person) if person else "System or historical account",
             action, subject, reason]
 
 

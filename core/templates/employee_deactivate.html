@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load account_names %}
 {% block title %}Deactivate {{ emp.name }}{% endblock %}
 {% block content %}
 <div class="head"><h1>Deactivate {{ emp.name }}</h1></div>
@@ -6,7 +7,7 @@
   <p><b>What happens:</b></p>
   <ul>
     <li>{{ emp.name }} is no longer counted as active and is left out of new attendance registers and payroll runs.</li>
-    <li>{% if emp.user %}Their login <b>{{ emp.user.username }}</b> is disabled immediately, including any open session.{% else %}They have no linked login.{% endif %}</li>
+    <li>{% if emp.user %}Their login <b>{{ emp.user|account_label }}</b> is disabled immediately, including any open session.{% else %}They have no linked login.{% endif %}</li>
     <li>All attendance, leave and payroll history is kept. You can reactivate them later.</li>
   </ul>
 </section>

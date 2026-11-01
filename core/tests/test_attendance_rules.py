@@ -129,6 +129,8 @@ class StatusChangeTests(TestCase):
 class AuditTrailTests(TestCase):
     def test_every_punch_is_recorded_with_who(self):
         e, user = mk(), make_user("hr1")
+        from apps.organizations.models import OrganizationMembership
+        OrganizationMembership.objects.create(user=user, organization=e.organization)
         svc.check_in(e, now=time(9), today=DAY, by=user)
         svc.check_out(e, now=time(17), today=DAY, by=user)
         rows = list(AttendanceAudit.objects.order_by("id"))

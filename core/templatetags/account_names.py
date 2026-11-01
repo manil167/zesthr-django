@@ -1,6 +1,8 @@
 from django import template
+from core.account_labels import user_choice_label
 
 register = template.Library()
+register.filter('account_label', user_choice_label)
 
 
 @register.filter
