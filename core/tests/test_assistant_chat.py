@@ -145,6 +145,9 @@ class AssistantProviderTests(TestCase):
 @skipUnlessDBFeature('has_select_for_update')
 @override_settings(ASSISTANT_MINUTE_LIMIT=1, ASSISTANT_DAILY_LIMIT=10)
 class AssistantQuotaConcurrencyTests(TransactionTestCase):
+    # Preserve migration-seeded roles for the other transactional tests.
+    serialized_rollback = True
+
     def test_parallel_workers_share_one_usage_budget(self):
         user = User.objects.create_user('parallel-chat')
         barrier = Barrier(2)
@@ -163,3 +166,4 @@ class AssistantQuotaConcurrencyTests(TransactionTestCase):
             results = list(pool.map(lambda _: consume(), range(2)))
         self.assertCountEqual(results, ['allowed', 'limited'])
         self.assertEqual(AssistantQuota.objects.get(user=user).day_count, 1)
+
