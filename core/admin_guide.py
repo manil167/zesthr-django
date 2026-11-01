@@ -98,9 +98,12 @@ FIELD_EXAMPLES = {
 
 def field_guidance(model_admin, request):
     """Use the actual role-filtered admin fields, never database values or choices."""
-    readonly = model_admin.get_readonly_fields(request)
+    # UserAdmin's add screen only collects credentials; document its existing-account
+    # screen too, where operators actually edit names, email and access settings.
+    obj = model_admin.model() if model_admin.model._meta.label_lower == 'auth.user' else None
+    readonly = model_admin.get_readonly_fields(request, obj)
     fields = []
-    for name in flatten(model_admin.get_fields(request)):
+    for name in flatten(model_admin.get_fields(request, obj)):
         try:
             field = model_admin.model._meta.get_field(name)
         except FieldDoesNotExist:
@@ -109,6 +112,9 @@ def field_guidance(model_admin, request):
             continue
         automatic = name in readonly or not field.editable
         hint = FIELD_EXAMPLES.get(name)
+        if model_admin.model._meta.label_lower == 'auth.user' and name == 'password':
+            automatic = True
+            hint = 'The stored local password hash is not a plain-text password. Use the authorized password-change/reset flow; Neon credentials are managed by the provider-backed HROS screens.'
         if not hint:
             if field.is_relation:
                 hint = f'Select the matching {field.related_model._meta.verbose_name} from the records your role can access.'
